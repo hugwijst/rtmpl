@@ -1,0 +1,10 @@
+[package]
+
+name = "rtmpl"
+version = "0.0.1"
+authors = ["Hugo van der Wijst <hugo@wij.st>"]
+
+[lib]
+name = "rtmpl"
+plugin = true
+

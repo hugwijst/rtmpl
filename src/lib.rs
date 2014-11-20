@@ -55,32 +55,63 @@ fn model_template(ecx: &mut ExtCtxt, span: Span, meta_item: &MetaItem, item: &It
             let lit_option_attr_type = Literal(pat_option_attr_type);
 
             let get_type = |cx: &mut ExtCtxt, span: Span, substr: &Substructure| -> P<Expr> {
-                //match attr {
-                //    "world" => Some(StringType),
-                //    _ => None,
-                //}
-                //let none_path = cx.path_global(span, vec!(cx.ident_of("std"), cx.ident_of("option"), cx.ident_of("None")));
+                // Perform checks on struct format
+                // TODO: Add support from more struct types
+                // TODO: Check if there are more unsupported cases not handled here
                 let struct_def = match item.node {
                     ItemStruct(ref struct_def, _) => struct_def,
                     _ => panic!("We only support structures for now."),
                 };
-                let mut fields : Vec<syntax::ast::Arm> = struct_def.fields.iter().filter_map(|&Spanned {node: ref node, span: _}|
+
+                // Get the name and type of each named field
+                // TODO: add support for unnamed fields?
+                // TODO: find a better way to identify types
+                // TODO: annotate fields with attributes to pass extra information
+                let mut fields : Vec<syntax::ast::Arm> = struct_def.fields.iter().filter_map(|&Spanned {node: ref node, span: span}| {
+                    let ty_span = node.ty.span;
                     match node.kind {
                         NamedField(ident, _) => match node.ty.node {
                             TyPath(ref path, _, _) => match path_to_attr_type(path) {
-                                Some(t) => Some( cx.arm(span, vec!(cx.pat_lit(span, cx.expr_str(span, token::get_ident(ident)))), cx.expr_some(span,
-                                        cx.expr_path(cx.path_global(span, vec!(cx.ident_of("rtmpl"), cx.ident_of(format!("{}", t).as_slice())) ))
-                                    )) ),
-                                None => None,
-                            },
-                            _ => None,
-                        },
-                        UnnamedField(_) => panic!("No support for unnamed fields (yet)."),
-                    }
-                ).collect();
+                                // If we can translate the path to an address type
+                                Some(field_type) =>  {
+                                    let ident_istring = token::get_ident(ident);
+                                    // The pattern of the match arm, should be the name of the
+                                    // field
+                                    let pattern = vec!(cx.pat_lit(span, cx.expr_str(span, ident_istring)));
 
+                                    let field_type_str = format!("{}", field_type);
+                                    // The global path to a value of the AttrType enum
+                                    let fielt_type_path = cx.path_global(span, vec!(
+                                            cx.ident_of("rtmpl"),
+                                            cx.ident_of(field_type_str.as_slice())
+                                    ));
+                                    // The expression of the match arm
+                                    let expression = cx.expr_some(span, cx.expr_path(fielt_type_path));
+
+                                    Some( cx.arm(span, pattern, expression) )
+                                },
+                                // Unknown type, generate warning
+                                None => {
+                                    cx.span_warn(ty_span, format!("Unsupported attribute type \"{}\" for automatic model instantiation!", path).as_slice());
+                                    None
+                                }
+                            },
+                            ref ty => {
+                                cx.span_warn(ty_span, format!("Unsupported type expression {} for automatic model instantiation!", ty).as_slice());
+                                None
+                            }
+                        },
+                        UnnamedField(_) => {
+                            cx.span_warn(span, format!("Unnamed fields are not (yet) supported for model instantiation.").as_slice());
+                            None
+                        }
+                    }
+                }).collect();
+
+                // Add the final arm: "_ => None"
                 fields.push(cx.arm(span, vec!(cx.pat_wild(span)), cx.expr_none(span)));
 
+                // Return the constructed match statement
                 cx.expr_match(span,
                     substr.nonself_args[0].clone(),
                     fields,

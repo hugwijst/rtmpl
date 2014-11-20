@@ -34,19 +34,6 @@ pub trait Model {
 }
 
 fn path_to_attr_type(path: &syntax::ast::Path) -> Option<AttrType> {
-    let std_ = token::intern("std");
-    let string_ = token::intern("string");
-    let string__ = token::intern("String");
-
-    let int_  = token::intern("int");
-    let i8_   = token::intern("i8");
-    let i16_  = token::intern("i16");
-    let i32_  = token::intern("i32");
-    let uint_ = token::intern("uint");
-    let u8_   = token::intern("u8");
-    let u16_  = token::intern("u16");
-    let u32_  = token::intern("u32");
-
     let path_str : Vec<String> = path.segments.iter().map(
         |&PathSegment { identifier: Ident { name: ref n, .. }, .. }| n.as_str().to_string()
     ).collect();

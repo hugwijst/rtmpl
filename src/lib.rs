@@ -8,7 +8,7 @@ extern crate rustc;
 
 use rustc::plugin::Registry;
 use syntax::ast::{CookedStr, Expr, Ident, Item, ItemStruct, LitInt, LitStr, MetaItem, MetaWord, MutImmutable, Plus, UnsuffixedIntLit};
-use syntax::ast::{NamedField, UnnamedField};
+use syntax::ast::{NamedField, StructField, UnnamedField};
 use syntax::ast::{TyPath, PathSegment};
 use syntax::codemap::{Span, Spanned};
 use syntax::ext::base::{Decorator, ExtCtxt};
@@ -46,6 +46,27 @@ fn path_to_attr_type(path: &syntax::ast::Path) -> Option<AttrType> {
     }
 }
 
+// Get the name and type of each field
+// TODO: add support for unnamed fields?
+// TODO: find a better way to identify types
+// TODO: annotate fields with attributes to pass extra information
+fn get_field_info(ecx: &mut ExtCtxt, field: &StructField) -> (Option<Ident>, Option<AttrType>) {
+    let field_name = match field.node.kind {
+        NamedField(ident, _) => Some(ident),
+        UnnamedField(_) => None,
+    };
+
+    let field_type = match field.node.ty.node {
+        TyPath(ref path, _, _) => path_to_attr_type(path),
+        ref ty => {
+            ecx.span_warn(field.node.ty.span, format!("Unsupported type expression {} for automatic model instantiation!", ty).as_slice());
+            None
+        }
+    };
+
+    (field_name, field_type)
+}
+
 fn model_template(ecx: &mut ExtCtxt, span: Span, meta_item: &MetaItem, item: &Item, push: |P<Item>|) {
     match meta_item.node {
         MetaWord(_) => {
@@ -64,45 +85,37 @@ fn model_template(ecx: &mut ExtCtxt, span: Span, meta_item: &MetaItem, item: &It
                 };
 
                 // Get the name and type of each named field
-                // TODO: add support for unnamed fields?
-                // TODO: find a better way to identify types
-                // TODO: annotate fields with attributes to pass extra information
-                let mut fields : Vec<syntax::ast::Arm> = struct_def.fields.iter().filter_map(|&Spanned {node: ref node, span: span}| {
-                    let ty_span = node.ty.span;
-                    match node.kind {
-                        NamedField(ident, _) => match node.ty.node {
-                            TyPath(ref path, _, _) => match path_to_attr_type(path) {
-                                // If we can translate the path to an address type
-                                Some(field_type) =>  {
-                                    let ident_istring = token::get_ident(ident);
-                                    // The pattern of the match arm, should be the name of the
-                                    // field
-                                    let pattern = vec!(cx.pat_lit(span, cx.expr_str(span, ident_istring)));
+                let mut fields : Vec<syntax::ast::Arm> = struct_def.fields.iter().filter_map(|field| {
+                    let info = get_field_info(cx, field);
 
-                                    let field_type_str = format!("{}", field_type);
-                                    // The global path to a value of the AttrType enum
-                                    let fielt_type_path = cx.path_global(span, vec!(
-                                            cx.ident_of("rtmpl"),
-                                            cx.ident_of(field_type_str.as_slice())
+                    match info {
+                        // Known type, named field
+                        (Some(ident), Some(ty)) => {
+                            let ident_istring = token::get_ident(ident);
+                            // The pattern of the match arm, should be the name of the
+                            // field
+                            let pattern = vec!(cx.pat_lit(span, cx.expr_str(span, ident_istring)));
+
+                            let field_type_str = format!("{}", ty);
+                            // The global path to a value of the AttrType enum
+                            let fielt_type_path = cx.path_global(span, vec!(
+                                    cx.ident_of("rtmpl"),
+                                    cx.ident_of(field_type_str.as_slice())
                                     ));
-                                    // The expression of the match arm
-                                    let expression = cx.expr_some(span, cx.expr_path(fielt_type_path));
+                            // The expression of the match arm
+                            let expression = cx.expr_some(span, cx.expr_path(fielt_type_path));
 
-                                    Some( cx.arm(span, pattern, expression) )
-                                },
-                                // Unknown type, generate warning
-                                None => {
-                                    cx.span_warn(ty_span, format!("Unsupported attribute type \"{}\" for automatic model instantiation!", path).as_slice());
-                                    None
-                                }
-                            },
-                            ref ty => {
-                                cx.span_warn(ty_span, format!("Unsupported type expression {} for automatic model instantiation!", ty).as_slice());
-                                None
-                            }
+                            Some( cx.arm(span, pattern, expression) )
                         },
-                        UnnamedField(_) => {
-                            cx.span_warn(span, format!("Unnamed fields are not (yet) supported for model instantiation.").as_slice());
+                        // Either unknown type or unnamed field
+                        (id, ty) => {
+                            if ty.is_none() {
+                                // Unknown type, generate warning
+                                cx.span_warn(field.node.ty.span, format!("Unsupported attribute type for automatic model instantiation!").as_slice());
+                            }
+                            if id.is_none() {
+                                cx.span_warn(span, format!("Unnamed fields are not (yet) supported for model instantiation.").as_slice());
+                            }
                             None
                         }
                     }

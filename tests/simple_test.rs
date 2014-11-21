@@ -5,12 +5,13 @@
 extern crate rtmpl;
 
 use rtmpl::Model;
+use rtmpl::EmptyModel;
 
-trait Template<M> {
+trait Template<M: Model> {
     fn render(model: &M) -> String;
 }
 
-struct TestTemplate<M> {
+struct TestTemplate<M: Model> {
     res: String,
 }
 
@@ -25,7 +26,7 @@ macro_rules! template_from_file( ($file:expr) => (
     TestTemplate::from_str(include_str!($file))
 ) )
 
-impl <M/*: Model*/> TestTemplate<M> {
+impl <M: Model> TestTemplate<M> {
     fn from_str(template: &str) -> TestTemplate<M> {
         TestTemplate { res: String::from_str(template) }
     }
@@ -39,7 +40,7 @@ impl <M/*: Model*/> TestTemplate<M> {
 fn simple_str() {
     let templ = "hello world";
 
-//    assert!(Template::from_str(templ).render() == "hello world");
+    assert!(TestTemplate::from_str(templ).render(&EmptyModel) == "hello world");
 }
 
 #[test]
@@ -76,7 +77,7 @@ fn from_file() {
     //trace_macros!(true);
     let template = template_from_file!("hello.tmpl");
 
-    let res = template.render(&1u32);
+    let res = template.render(&EmptyModel);
 
     assert!(res == "Hello World!\n");
 }

@@ -1,16 +1,15 @@
 use rustc::plugin::Registry;
 use syntax::ast::Arm;
-use syntax::ast::{CookedStr, Expr, Ident, Item, ItemStruct, LitInt, LitStr, MetaItem, MetaWord, MutImmutable, Plus, UnsuffixedIntLit};
+use syntax::ast::{Expr, Ident, Item, ItemStruct, MetaItem, MetaWord};
 use syntax::ast::{NamedField, StructField, UnnamedField};
 use syntax::ast::{TyPath, PathSegment};
 use syntax::ast::Path as AstPath;
-use syntax::codemap::{Span, Spanned};
+use syntax::codemap::{Span};
 use syntax::ext::base::{Decorator, ExtCtxt};
 use syntax::ext::build::AstBuilder;
 use syntax::ext::deriving::generic::{combine_substructure, MethodDef, Substructure, TraitDef};
-use syntax::ext::deriving::generic::ty::{borrowed, borrowed_explicit_self, borrowed_self, nil_ty, LifetimeBounds, Literal, Path, Self};
+use syntax::ext::deriving::generic::ty::{borrowed, borrowed_explicit_self, LifetimeBounds, Literal, Path, Self};
 use syntax::parse::token;
-use syntax::parse::token::InternedString;
 use syntax::ptr::P;
 
 use model::{AttrType, StringType, IntType, UintType};

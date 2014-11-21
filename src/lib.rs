@@ -75,15 +75,15 @@ fn model_template(ecx: &mut ExtCtxt, span: Span, meta_item: &MetaItem, item: &It
             let pat_option_attr_type = Path::new_(vec!("std", "option", "Option"), None, vec!(box lit_attr_type), true);
             let lit_option_attr_type = Literal(pat_option_attr_type);
 
-            let get_type = |cx: &mut ExtCtxt, span: Span, substr: &Substructure| -> P<Expr> {
-                // Perform checks on struct format
-                // TODO: Add support from more struct types
-                // TODO: Check if there are more unsupported cases not handled here
-                let struct_def = match item.node {
-                    ItemStruct(ref struct_def, _) => struct_def,
-                    _ => panic!("We only support structures for now."),
-                };
+            // Perform checks on struct format
+            // TODO: Add support from more struct types
+            // TODO: Check if there are more unsupported cases not handled here
+            let struct_def = match item.node {
+                ItemStruct(ref struct_def, _) => struct_def,
+                _ => panic!("We only support structures for now."),
+            };
 
+            let get_type = |cx: &mut ExtCtxt, span: Span, substr: &Substructure| -> P<Expr> {
                 // Get the name and type of each named field
                 let mut fields : Vec<syntax::ast::Arm> = struct_def.fields.iter().filter_map(|field| {
                     let info = get_field_info(cx, field);

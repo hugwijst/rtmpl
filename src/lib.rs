@@ -33,6 +33,24 @@ pub trait Model {
     fn __get_uint(&self, attr: &str) -> u64;
 }
 
+pub struct EmptyModel;
+
+impl Model for EmptyModel {
+    fn __get_type(attr: &str, _ignored: Option<EmptyModel>) -> Option<AttrType> {
+        // This model does not have any attributes
+        return None;
+    }
+    fn __get_string(&self, attr: &str) -> String {
+        panic!("This function should not be called with an incorrect identifier!");
+    }
+    fn __get_int(&self, attr: &str) -> i64 {
+        panic!("This function should not be called with an incorrect identifier!");
+    }
+    fn __get_uint(&self, attr: &str) -> u64 {
+        panic!("This function should not be called with an incorrect identifier!");
+    }
+}
+
 fn path_to_attr_type(path: &syntax::ast::Path) -> Option<AttrType> {
     let path_str : Vec<String> = path.segments.iter().map(
         |&PathSegment { identifier: Ident { name: ref n, .. }, .. }| n.as_str().to_string()

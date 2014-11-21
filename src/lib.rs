@@ -116,12 +116,12 @@ fn model_template(ecx: &mut ExtCtxt, span: Span, meta_item: &MetaItem, item: &It
 
                             let field_type_str = format!("{}", ty);
                             // The global path to a value of the AttrType enum
-                            let fielt_type_path = cx.path_global(span, vec!(
+                            let field_type_path = cx.path_global(span, vec!(
                                     cx.ident_of("rtmpl"),
                                     cx.ident_of(field_type_str.as_slice())
                                     ));
                             // The expression of the match arm
-                            let expression = cx.expr_some(span, cx.expr_path(fielt_type_path));
+                            let expression = cx.expr_some(span, cx.expr_path(field_type_path));
 
                             Some( cx.arm(span, pattern, expression) )
                         },

@@ -22,7 +22,7 @@ macro_rules! template_from_file( ($file:expr) => (
 fn simple_str() {
     let templ = "hello world";
 
-    assert!(StringTemplate::from_str(templ).render(&EmptyModel) == "hello world");
+    assert!(StringTemplate::from_str(templ).render(&EmptyModel).as_slice() == "hello world");
 }
 
 #[test]
@@ -30,14 +30,6 @@ fn compound_str() {
     let templ_str = "Hello {world}!";
 
     let tmpl = StringTemplate::from_str(templ_str);
-
-    /* GOAL TEMPLATE CODE:
-       struct Template__WorldModel {
-           fn render(&self, model: &M) -> String {
-               format!("Hello {:s}!", model.world);
-           }
-       }
-     */
 
     let model = WorldModel { world: String::from_str("Earth"), min_temp: 184, max_temp: 330 };
 
@@ -51,7 +43,7 @@ fn compound_str() {
     assert!(model.__get_uint("min_temp") == 184);
     assert!(model.__get_int("max_temp") == 330);
 
-    assert!(tmpl.render(&model) == "Hello Earth!");
+    assert!(tmpl.render(&model).as_slice() == "Hello Earth!");
 }
 
 #[test]
@@ -61,6 +53,6 @@ fn from_file() {
 
     let res = template.render(&EmptyModel);
 
-    assert!(res == "Hello World!\n");
+    assert!(res.as_slice() == "Hello World!\n");
 }
 

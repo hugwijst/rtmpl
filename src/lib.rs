@@ -28,9 +28,9 @@ pub enum AttrType {
 
 pub trait Model {
     fn __get_type(attr: &str, _ignored: Option<Self>) -> Option<AttrType>;
-    fn __get_string(&self, attr: &str) -> &str;
-    fn __get_int(&self, attr: &str) -> int;
-    fn __get_uint(&self, attr: &str) -> uint;
+    fn __get_string(&self, attr: &str) -> String;
+    fn __get_int(&self, attr: &str) -> i64;
+    fn __get_uint(&self, attr: &str) -> u64;
 }
 
 fn path_to_attr_type(path: &syntax::ast::Path) -> Option<AttrType> {
@@ -131,17 +131,63 @@ fn model_template(ecx: &mut ExtCtxt, span: Span, meta_item: &MetaItem, item: &It
                 )
             };
 
-            fn get_str(cx: &mut ExtCtxt, span: Span, substr: &Substructure) -> P<Expr> {
-                cx.expr_lit(span, LitStr(InternedString::new("Test"), CookedStr))
+            type GetArmExpr<'a> = |Span, &ExtCtxt, Ident|: 'a -> P<Expr>;
+
+            fn match_for_type(ty: AttrType, str_fields: &Vec<StructField>, cx: &mut ExtCtxt, span: Span, substr: &Substructure, arm_expr_fn: GetArmExpr) -> P<Expr> {
+                // Get the name and type of each named field
+                let mut fields : Vec<syntax::ast::Arm> = str_fields.iter().filter_map(|field| {
+                    let info = get_field_info(cx, field);
+
+                    match info {
+                        // Known type, named field
+                        (Some(ident), Some(field_ty)) if field_ty == ty => {
+                            let ident_istring = token::get_ident(ident);
+                            // The pattern of the match arm, should be the name of the
+                            // field
+                            let pattern = vec!(cx.pat_lit(span, cx.expr_str(span, ident_istring)));
+
+                            // The expression of the match arm
+                            let expression = arm_expr_fn(span, cx, ident);
+
+                            Some( cx.arm(span, pattern, expression) )
+                        },
+                        // We don't care for other types or unnamed fields
+                        _ => None
+                    }
+                }).collect();
+
+                // Add the final arm: "_ => None"
+                let failure_str = "This function should not be called with an incorrect identifier!";
+                let failure_istr = token::get_ident(cx.ident_of(failure_str));
+                fields.push(cx.arm(span, vec!(cx.pat_wild(span)), cx.expr_fail(span, failure_istr)));
+
+                // Return the constructed match statement
+                cx.expr_match(span,
+                    substr.nonself_args[0].clone(),
+                    fields,
+                )
             }
 
-            fn get_int(cx: &mut ExtCtxt, span: Span, substr: &Substructure) -> P<Expr> {
-                cx.expr_lit(span, LitInt(42, UnsuffixedIntLit(Plus)))
-            }
+            let get_str = |cx: &mut ExtCtxt, span: Span, substr: &Substructure| -> P<Expr> {
+                fn arm_expr_fn(span: Span, cx: &ExtCtxt, ident: Ident) -> P<Expr> {
+                    cx.expr_method_call(span, cx.expr_field_access(span, cx.expr_self(span), ident), cx.ident_of("clone"), Vec::new())
+                };
+                match_for_type(StringType, &struct_def.fields, cx, span, substr, arm_expr_fn)
+            };
 
-            fn get_uint(cx: &mut ExtCtxt, span: Span, substr: &Substructure) -> P<Expr> {
-                cx.expr_lit(span, LitInt(43, UnsuffixedIntLit(Plus)))
-            }
+            let get_int = |cx: &mut ExtCtxt, span: Span, substr: &Substructure| -> P<Expr> {
+                fn arm_expr_fn(span: Span, cx: &ExtCtxt, ident: Ident) -> P<Expr> {
+                    cx.expr_cast(span, cx.expr_field_access(span, cx.expr_self(span), ident), cx.ty_ident(span, cx.ident_of("i64")))
+                };
+                match_for_type(IntType, &struct_def.fields, cx, span, substr, arm_expr_fn)
+            };
+
+            let get_uint = |cx: &mut ExtCtxt, span: Span, substr: &Substructure| -> P<Expr> {
+                fn arm_expr_fn(span: Span, cx: &ExtCtxt, ident: Ident) -> P<Expr> {
+                    cx.expr_cast(span, cx.expr_field_access(span, cx.expr_self(span), ident), cx.ty_ident(span, cx.ident_of("u64")))
+                };
+                match_for_type(UintType, &struct_def.fields, cx, span, substr, arm_expr_fn)
+            };
 
             macro_rules! md (
                 ($name:expr, $expl_self:expr, $args:expr, $ret:expr, $f:ident) => { {
@@ -192,9 +238,9 @@ fn model_template(ecx: &mut ExtCtxt, span: Span, meta_item: &MetaItem, item: &It
                 generics: LifetimeBounds::empty(),
                 methods: vec!(
                     md_get_type,
-                    md_get!("__get_string", borrowed_explicit_self(), borrowed( box Literal(Path::new(vec!("str"))) ), get_str),
-                    md_get!("__get_int", borrowed_explicit_self(), Literal(Path::new(vec!("int"))), get_int),
-                    md_get!("__get_uint", borrowed_explicit_self(), Literal(Path::new(vec!("uint"))), get_uint)
+                    md_get!("__get_string", borrowed_explicit_self(), /*borrowed( box */Literal(Path::new(vec!("std", "string", "String"))) /*)*/, get_str),
+                    md_get!("__get_int", borrowed_explicit_self(), Literal(Path::new(vec!("i64"))), get_int),
+                    md_get!("__get_uint", borrowed_explicit_self(), Literal(Path::new(vec!("u64"))), get_uint)
                     )
             };
             trait_def.expand(ecx, meta_item, item, push)

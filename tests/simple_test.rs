@@ -4,16 +4,8 @@
 #[phase(plugin, link)]
 extern crate rtmpl;
 
-use rtmpl::Model;
-use rtmpl::EmptyModel;
+use rtmpl::{EmptyModel, Model, StringTemplate};
 
-trait Template<M: Model> {
-    fn render(model: &M) -> String;
-}
-
-struct TestTemplate<M: Model> {
-    res: String,
-}
 
 #[model]
 struct WorldModel {
@@ -23,31 +15,21 @@ struct WorldModel {
 }
 
 macro_rules! template_from_file( ($file:expr) => (
-    TestTemplate::from_str(include_str!($file))
+    StringTemplate::from_str(include_str!($file))
 ) )
-
-impl <M: Model> TestTemplate<M> {
-    fn from_str(template: &str) -> TestTemplate<M> {
-        TestTemplate { res: String::from_str(template) }
-    }
-
-    fn render(&self, model: &M) -> &str {
-        self.res.as_slice()
-    }
-}
 
 #[test]
 fn simple_str() {
     let templ = "hello world";
 
-    assert!(TestTemplate::from_str(templ).render(&EmptyModel) == "hello world");
+    assert!(StringTemplate::from_str(templ).render(&EmptyModel) == "hello world");
 }
 
 #[test]
 fn compound_str() {
     let templ_str = "Hello {world}!";
 
-    let tmpl = TestTemplate::from_str(templ_str);
+    let tmpl = StringTemplate::from_str(templ_str);
 
     /* GOAL TEMPLATE CODE:
        struct Template__WorldModel {

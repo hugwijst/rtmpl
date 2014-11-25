@@ -1,16 +1,16 @@
-use model::{AttrType, Model, StringType, IntType, UintType};
+use model::{AttrType, Model};
 
 pub trait Template<M: Model> {
     fn render(model: &M) -> String;
 }
 
 enum Expr {
-    ExprField { name: String, ty: AttrType },
+    Field { name: String, ty: AttrType },
 }
 
 enum Item {
-    ItemText { text: String },
-    ItemExpr { expr: Expr },
+    Text { text: String },
+    Expr { expr: Expr },
 }
 
 pub struct StringTemplate<M: Model> {
@@ -22,29 +22,29 @@ impl <M: Model> StringTemplate<M> {
         enum State { Text, Expr };
 
         let mut work = template;
-        let mut state = Text;
+        let mut state = State::Text;
         let mut ast = Vec::new();
 
         loop {
             state = match state {
-                Text => {
+                State::Text => {
                     let v : Vec<&str> = work.splitn(1, '{').collect();
 
                     work = match v.as_slice() {
                         [text] => {
-                            ast.push(ItemText { text: text.to_string() });
+                            ast.push(Item::Text { text: text.to_string() });
                             break;
                         }
                         [text, pos_expr] => {
-                            ast.push(ItemText { text: text.to_string() });
+                            ast.push(Item::Text { text: text.to_string() });
                             pos_expr
                         }
                         _ => unreachable!("Because split called with n == 1.")
                     };
 
-                    Expr
+                    State::Expr
                 }
-                Expr => {
+                State::Expr => {
                     let v : Vec<&str> = work.splitn(1, '}').collect();
 
                     work = match v.as_slice() {
@@ -55,13 +55,13 @@ impl <M: Model> StringTemplate<M> {
                             let ty = Model::__get_type(expr, None::<M>);
                             assert!(ty.is_some());
 
-                            ast.push(ItemExpr { expr: ExprField{ name: expr.to_string(), ty: ty.unwrap() } } );
+                            ast.push(Item::Expr { expr: Expr::Field{ name: expr.to_string(), ty: ty.unwrap() } } );
                             text
                         }
                         _ => unreachable!("Because split called with n == 1.")
                     };
 
-                    Text
+                    State::Text
                 }
             };
         }
@@ -74,11 +74,11 @@ impl <M: Model> StringTemplate<M> {
 
         for ref item in self.ast.iter() {
             match *item {
-                &ItemText { ref text } => res.push_str(text.as_slice()),
-                &ItemExpr { expr: ExprField { ref name, ty } } => match ty {
-                    StringType => res.push_str(model.__get_string(name.as_slice())),
-                    IntType => res.push_str(model.__get_int(name.as_slice()).to_string().as_slice()),
-                    UintType => res.push_str(model.__get_uint(name.as_slice()).to_string().as_slice()),
+                &Item::Text { ref text } => res.push_str(text.as_slice()),
+                &Item::Expr { expr: Expr::Field { ref name, ty } } => match ty {
+                    AttrType::String => res.push_str(model.__get_string(name.as_slice())),
+                    AttrType::Int => res.push_str(model.__get_int(name.as_slice()).to_string().as_slice()),
+                    AttrType::Uint => res.push_str(model.__get_uint(name.as_slice()).to_string().as_slice()),
                 }
             }
         }

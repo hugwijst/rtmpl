@@ -13,7 +13,7 @@ use syntax::ext::deriving::generic::ty::{borrowed, borrowed_explicit_self, Borro
 use syntax::parse::token;
 use syntax::ptr::P;
 
-use model::{AttrType, StringType, IntType, UintType};
+use model::AttrType;
 
 fn path_to_attr_type(path: &AstPath) -> Option<AttrType> {
     let path_str : Vec<String> = path.segments.iter().map(
@@ -21,9 +21,9 @@ fn path_to_attr_type(path: &AstPath) -> Option<AttrType> {
     ).collect();
 
     match path_str.connect("::").as_slice() {
-        "std::string::String" | "String" => Some(StringType),
-        "int" | "i8" | "i16" | "i32" => Some(IntType),
-        "uint" | "u8" | "u16" | "u32" => Some(UintType),
+        "std::string::String" | "String" => Some(AttrType::String),
+        "int" | "i8" | "i16" | "i32" => Some(AttrType::Int),
+        "uint" | "u8" | "u16" | "u32" => Some(AttrType::Uint),
         _ => None,
     }
 }
@@ -83,6 +83,7 @@ fn model_template(ecx: &mut ExtCtxt, span: Span, meta_item: &MetaItem, item: &It
                             let field_type_path = cx.path_global(span, vec!(
                                     cx.ident_of("rtmpl"),
                                     cx.ident_of("model"),
+                                    cx.ident_of("AttrType"),
                                     cx.ident_of(field_type_str.as_slice())
                                     ));
                             // The expression of the match arm
@@ -155,21 +156,21 @@ fn model_template(ecx: &mut ExtCtxt, span: Span, meta_item: &MetaItem, item: &It
                 fn arm_expr_fn(span: Span, cx: &ExtCtxt, ident: Ident) -> P<Expr> {
                     cx.expr_method_call(span, cx.expr_field_access(span, cx.expr_self(span), ident), cx.ident_of("as_slice"), Vec::new())
                 };
-                match_for_type(StringType, &struct_def.fields, cx, span, substr, arm_expr_fn)
+                match_for_type(AttrType::String, &struct_def.fields, cx, span, substr, arm_expr_fn)
             };
 
             let get_int = |cx: &mut ExtCtxt, span: Span, substr: &Substructure| -> P<Expr> {
                 fn arm_expr_fn(span: Span, cx: &ExtCtxt, ident: Ident) -> P<Expr> {
                     cx.expr_cast(span, cx.expr_field_access(span, cx.expr_self(span), ident), cx.ty_ident(span, cx.ident_of("i64")))
                 };
-                match_for_type(IntType, &struct_def.fields, cx, span, substr, arm_expr_fn)
+                match_for_type(AttrType::Int, &struct_def.fields, cx, span, substr, arm_expr_fn)
             };
 
             let get_uint = |cx: &mut ExtCtxt, span: Span, substr: &Substructure| -> P<Expr> {
                 fn arm_expr_fn(span: Span, cx: &ExtCtxt, ident: Ident) -> P<Expr> {
                     cx.expr_cast(span, cx.expr_field_access(span, cx.expr_self(span), ident), cx.ty_ident(span, cx.ident_of("u64")))
                 };
-                match_for_type(UintType, &struct_def.fields, cx, span, substr, arm_expr_fn)
+                match_for_type(AttrType::Uint, &struct_def.fields, cx, span, substr, arm_expr_fn)
             };
 
             macro_rules! md (

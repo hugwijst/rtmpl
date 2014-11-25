@@ -35,9 +35,9 @@ fn compound_str() {
 
     // XXX: The none::<> stuff is a hack until Uniform Function Call Syntax (UFCS) is implemented,
     // see http://stackoverflow.com/questions/23674538/name-resolving-error-when-implementing-static-method-from-a-trait
-    assert!(Model::__get_type("world", None::<WorldModel>).unwrap() == rtmpl::model::StringType);
-    assert!(Model::__get_type("min_temp", None::<WorldModel>).unwrap() == rtmpl::model::UintType);
-    assert!(Model::__get_type("max_temp", None::<WorldModel>).unwrap() == rtmpl::model::IntType);
+    assert!(Model::__get_type("world", None::<WorldModel>).unwrap() == rtmpl::model::AttrType::String);
+    assert!(Model::__get_type("min_temp", None::<WorldModel>).unwrap() == rtmpl::model::AttrType::Uint);
+    assert!(Model::__get_type("max_temp", None::<WorldModel>).unwrap() == rtmpl::model::AttrType::Int);
     assert!(Model::__get_type("n/a", None::<WorldModel>).is_none());
     assert!(model.__get_string("world") == "Earth");
     assert!(model.__get_uint("min_temp") == 184);

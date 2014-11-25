@@ -1,8 +1,8 @@
 #[deriving(Show,PartialEq)]
 pub enum AttrType {
-    StringType,
-    IntType,
-    UintType,
+    String,
+    Int,
+    Uint,
 }
 
 pub trait Model {

@@ -1,6 +1,7 @@
 use rustc::plugin::Registry;
 use syntax::ast::Arm;
 use syntax::ast::{Expr, Ident, Item, ItemStruct, MetaItem, MetaWord};
+use syntax::ast::MutImmutable;
 use syntax::ast::{NamedField, StructField, UnnamedField};
 use syntax::ast::{TyPath, PathSegment};
 use syntax::ast::Path as AstPath;
@@ -8,7 +9,7 @@ use syntax::codemap::{Span};
 use syntax::ext::base::{Decorator, ExtCtxt};
 use syntax::ext::build::AstBuilder;
 use syntax::ext::deriving::generic::{combine_substructure, MethodDef, Substructure, TraitDef};
-use syntax::ext::deriving::generic::ty::{borrowed, borrowed_explicit_self, LifetimeBounds, Literal, Path, Self};
+use syntax::ext::deriving::generic::ty::{borrowed, borrowed_explicit_self, Borrowed, LifetimeBounds, Literal, Path, Ptr, Self};
 use syntax::parse::token;
 use syntax::ptr::P;
 
@@ -152,7 +153,7 @@ fn model_template(ecx: &mut ExtCtxt, span: Span, meta_item: &MetaItem, item: &It
 
             let get_str = |cx: &mut ExtCtxt, span: Span, substr: &Substructure| -> P<Expr> {
                 fn arm_expr_fn(span: Span, cx: &ExtCtxt, ident: Ident) -> P<Expr> {
-                    cx.expr_method_call(span, cx.expr_field_access(span, cx.expr_self(span), ident), cx.ident_of("clone"), Vec::new())
+                    cx.expr_method_call(span, cx.expr_field_access(span, cx.expr_self(span), ident), cx.ident_of("as_slice"), Vec::new())
                 };
                 match_for_type(StringType, &struct_def.fields, cx, span, substr, arm_expr_fn)
             };
@@ -177,7 +178,7 @@ fn model_template(ecx: &mut ExtCtxt, span: Span, meta_item: &MetaItem, item: &It
                     let attrs = Vec::new();//vec!(cx.attribute(span, inline));
                     MethodDef {
                         name: $name,
-                        generics: LifetimeBounds::empty(),
+                        generics: LifetimeBounds { lifetimes: vec!( ("'a", Vec::new()) ), bounds: Vec::new() },
                         explicit_self: $expl_self,
                         args: $args,
                         ret_ty: $ret,
@@ -220,7 +221,7 @@ fn model_template(ecx: &mut ExtCtxt, span: Span, meta_item: &MetaItem, item: &It
                 generics: LifetimeBounds::empty(),
                 methods: vec!(
                     md_get_type,
-                    md_get!("__get_string", borrowed_explicit_self(), /*borrowed( box */Literal(Path::new(vec!("std", "string", "String"))) /*)*/, get_str),
+                    md_get!("__get_string", Some(Some(Borrowed(Some("'a"), MutImmutable))), Ptr( box Literal(Path::new(vec!("str"))), Borrowed(Some("'a"), MutImmutable) ), get_str),
                     md_get!("__get_int", borrowed_explicit_self(), Literal(Path::new(vec!("i64"))), get_int),
                     md_get!("__get_uint", borrowed_explicit_self(), Literal(Path::new(vec!("u64"))), get_uint)
                     )

@@ -39,7 +39,7 @@ fn compound_str() {
     assert!(Model::__get_type("min_temp", None::<WorldModel>).unwrap() == rtmpl::model::UintType);
     assert!(Model::__get_type("max_temp", None::<WorldModel>).unwrap() == rtmpl::model::IntType);
     assert!(Model::__get_type("n/a", None::<WorldModel>).is_none());
-    assert!(model.__get_string("world") == "Earth".to_string());
+    assert!(model.__get_string("world") == "Earth");
     assert!(model.__get_uint("min_temp") == 184);
     assert!(model.__get_int("max_temp") == 330);
 

@@ -76,7 +76,7 @@ impl <M: Model> StringTemplate<M> {
             match *item {
                 &ItemText { ref text } => res.push_str(text.as_slice()),
                 &ItemExpr { expr: ExprField { ref name, ty } } => match ty {
-                    StringType => res.push_str(model.__get_string(name.as_slice()).as_slice()),
+                    StringType => res.push_str(model.__get_string(name.as_slice())),
                     IntType => res.push_str(model.__get_int(name.as_slice()).to_string().as_slice()),
                     UintType => res.push_str(model.__get_uint(name.as_slice()).to_string().as_slice()),
                 }

@@ -8,10 +8,10 @@ use rtmpl::{EmptyModel, Model, StringTemplate};
 
 
 #[model]
-struct WorldModel {
-    world: String,
-    min_temp: u32,
-    max_temp: i32,
+struct TestModel {
+    string: String,
+    uint32: u32,
+    int32: i32,
 }
 
 macro_rules! template_from_file( ($file:expr) => (
@@ -27,23 +27,23 @@ fn simple_str() {
 
 #[test]
 fn compound_str() {
-    let templ_str = "Hello {world}!";
+    let templ_str = "Hello {string}!";
 
     let tmpl = StringTemplate::from_str(templ_str);
 
-    let model = WorldModel { world: String::from_str("Earth"), min_temp: 184, max_temp: 330 };
+    let model = TestModel { string: "World".to_string(), uint32: 184, int32: -330 };
 
     // XXX: The none::<> stuff is a hack until Uniform Function Call Syntax (UFCS) is implemented,
     // see http://stackoverflow.com/questions/23674538/name-resolving-error-when-implementing-static-method-from-a-trait
-    assert!(Model::__get_type("world", None::<WorldModel>).unwrap() == rtmpl::model::AttrType::String);
-    assert!(Model::__get_type("min_temp", None::<WorldModel>).unwrap() == rtmpl::model::AttrType::Uint);
-    assert!(Model::__get_type("max_temp", None::<WorldModel>).unwrap() == rtmpl::model::AttrType::Int);
-    assert!(Model::__get_type("n/a", None::<WorldModel>).is_none());
-    assert!(model.__get_string("world") == "Earth");
-    assert!(model.__get_uint("min_temp") == 184);
-    assert!(model.__get_int("max_temp") == 330);
+    assert!(Model::__get_type("string", None::<TestModel>).unwrap() == rtmpl::model::AttrType::String);
+    assert!(Model::__get_type("uint32", None::<TestModel>).unwrap() == rtmpl::model::AttrType::Uint);
+    assert!(Model::__get_type("int32", None::<TestModel>).unwrap() == rtmpl::model::AttrType::Int);
+    assert!(Model::__get_type("n/a", None::<TestModel>).is_none());
+    assert!(model.__get_string("string") == "World");
+    assert!(model.__get_uint("uint32") == 184);
+    assert!(model.__get_int("int32") == -330);
 
-    assert!(tmpl.render(&model).as_slice() == "Hello Earth!");
+    assert!(tmpl.render(&model).as_slice() == "Hello World!");
 }
 
 #[test]

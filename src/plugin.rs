@@ -24,8 +24,8 @@ fn path_to_attr_type(path: &AstPath) -> Option<AttrType> {
 
     match path_str.connect("::").as_slice() {
         "std::string::String" | "String" => Some(AttrType::String),
-        "int" | "i8" | "i16" | "i32" => Some(AttrType::Int),
-        "uint" | "u8" | "u16" | "u32" => Some(AttrType::Uint),
+        "int" | "i8" | "i16" | "i32" | "i64" => Some(AttrType::Int),
+        "uint" | "u8" | "u16" | "u32" | "u64" => Some(AttrType::Uint),
         "std::vec::Vec" | "Vec" => {
             let param = match path.segments.iter().last() {
                 Some(&PathSegment {
@@ -206,19 +206,6 @@ fn model_template(ecx: &mut ExtCtxt, span: Span, meta_item: &MetaItem, item: &It
                 match_for_type(is_ty, &struct_def.fields, cx, span, substr, arm_expr_fn)
             };
 
-            let get_sequence = |cx: &mut ExtCtxt, span: Span, substr: &Substructure| -> P<Expr> {
-                fn is_ty(ty: &AttrType) -> bool {
-                    match ty {
-                        &AttrType::Sequence(_) => true,
-                        _ => false,
-                    }
-                }
-                fn arm_expr_fn(span: Span, cx: &ExtCtxt, ident: Ident, ty: &AttrType) -> P<Expr> {
-                    cx.expr_unary(span, UnOp::UnUniq, cx.expr_method_call(span, cx.expr_field_access(span, cx.expr_self(span), ident), cx.ident_of("iter"), Vec::new()))
-                };
-                match_for_type(is_ty, &struct_def.fields, cx, span, substr, arm_expr_fn)
-            };
-
             let get_attr = |cx: &mut ExtCtxt, span: Span, substr: &Substructure| -> P<Expr> {
                 fn is_ty(ty: &AttrType) -> bool {
                     match ty {
@@ -289,10 +276,6 @@ fn model_template(ecx: &mut ExtCtxt, span: Span, meta_item: &MetaItem, item: &It
                 }
                 );
 
-            let a_type = box Ptr( box Literal( Path::new_local("A") ), Borrowed(Some("'a"), MutImmutable) );
-            let iter_type = box Literal( Path::new_(vec!["std", "iter", "Iterator"], None, vec![a_type], true) );
-            let boxed_iter_type = Literal( Path::new_(vec!["std", "boxed", "Box"], None, vec![iter_type], true) );
-
             let attr_type = box Literal( Path::new(vec!["rtmpl", "attr", "Attr"]) );
             let boxed_attr_type = Literal( Path::new_(vec!["std", "boxed", "Box"], None, vec![attr_type], true) );
 
@@ -307,7 +290,6 @@ fn model_template(ecx: &mut ExtCtxt, span: Span, meta_item: &MetaItem, item: &It
                     md_get!("__get_string", Vec::new(), Some(Some(Borrowed(Some("'a"), MutImmutable))), Ptr( box Literal(Path::new(vec!("str"))), Borrowed(Some("'a"), MutImmutable) ), get_str),
                     md_get!("__get_int", Vec::new(), borrowed_explicit_self(), Literal(Path::new(vec!("i64"))), get_int),
                     md_get!("__get_uint", Vec::new(), borrowed_explicit_self(), Literal(Path::new(vec!("u64"))), get_uint),
-                    //md_get!("__get_sequence", vec![ ("A", None, Vec::new()) ], borrowed_explicit_self(), boxed_iter_type, get_sequence),
                     md_get!("__get_attr", Vec::new(), borrowed_explicit_self(), boxed_attr_type, get_attr),
                     )
             };

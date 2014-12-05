@@ -9,10 +9,10 @@ fn error(ty_expected: &str, ty_used: &str) -> ! {
 pub trait Attr<'a> {
     fn get_type(&self) -> &'static str;
 
-    fn get_string<'a>(&'a self) -> &'a str { error("String", self.get_type()) }
+    fn get_string(&self) -> &'a str { error("String", self.get_type()) }
     fn get_int(&self) -> i64 { error("String", self.get_type()) }
     fn get_uint(&self) -> u64 { error("String", self.get_type()) }
-    fn iter(&'a self) -> Box<Iterator<Box<Attr>>> { error("String", self.get_type()) }
+    fn iter(&'a self) -> SeqIter<'a> { error("String", self.get_type()) }
 }
 
 pub trait ToAttr {
@@ -26,7 +26,7 @@ struct StringAttr<'a> {
 impl<'a> Attr<'a> for StringAttr<'a> {
     fn get_type(&self) -> &'static str { "String" }
 
-    fn get_string<'a>(&'a self) -> &'a str {
+    fn get_string(&self) -> &'a str {
         self.data
     }
 }
@@ -90,11 +90,25 @@ pub struct SeqAttr<'a, A: ToAttr, I: Iterator<&'a A> + Clone> {
     pub data: Box<I>,
 }
 
+pub struct SeqIter<'a> {
+    iter: Box<Iterator<Box<Attr<'a> + 'a>> + 'a>,
+}
+
+impl<'a> Iterator<Box<Attr<'a> + 'a>> for SeqIter<'a> {
+    fn next(&mut self) -> Option<Box<Attr<'a> + 'a>> {
+        self.iter.next()
+    }
+
+    fn size_hint(&self) -> (uint, Option<uint>) {
+        self.iter.size_hint()
+    }
+}
+
 impl <'a, A: ToAttr + 'a, I: Iterator<&'a A> + Clone> Attr<'a> for SeqAttr<'a, A, I> {
     fn get_type(&self) -> &'static str { "Sequence" }
 
-    fn iter(&'a self) -> Box<Iterator<Box<Attr>>> {
-        box self.data.clone().map(|a: &'a A| a.to_attr())
+    fn iter(&'a self) -> SeqIter<'a> {
+        SeqIter { iter: box self.data.clone().map(|a: &'a A| a.to_attr()) }
     }
 }
 

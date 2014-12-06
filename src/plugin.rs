@@ -4,7 +4,7 @@ use syntax::ast::{AngleBracketedParameters, AngleBracketedParameterData};
 use syntax::ast::{Expr, Ident, Item, ItemStruct, MetaItem, MetaWord};
 use syntax::ast::MutImmutable;
 use syntax::ast::{NamedField, StructField, UnnamedField};
-use syntax::ast::{TyPath, PathSegment};
+use syntax::ast::{Ty, Ty_, MutTy, PathSegment};
 use syntax::ast::Path as AstPath;
 use syntax::ast::UnOp;
 use syntax::codemap::{Span};
@@ -17,33 +17,42 @@ use syntax::ptr::P;
 
 use model::AttrType;
 
+fn ty_to_attr_type(ty: &P<Ty>) -> Option<AttrType> {
+    match ty.node {
+        Ty_::TyPath(ref path, _) => path_to_attr_type(path),
+        Ty_::TyRptr(_, MutTy { ty: ref ty_, .. }) => {
+            // TODO: figure out how we want to handle pointers
+            ty_to_attr_type(ty_)
+        }
+        ref ty => panic!("Unsupported type! ty: {}", ty),
+    }
+}
+
 fn path_to_attr_type(path: &AstPath) -> Option<AttrType> {
     let path_str : Vec<String> = path.segments.iter().map(
         |&PathSegment { identifier: Ident { name: ref n, .. }, .. }| n.as_str().to_string()
     ).collect();
 
     match path_str.connect("::").as_slice() {
-        "std::string::String" | "String" => Some(AttrType::String),
+        "std::string::String" | "String" | "str" => Some(AttrType::String),
         "int" | "i8" | "i16" | "i32" | "i64" => Some(AttrType::Int),
         "uint" | "u8" | "u16" | "u32" | "u64" => Some(AttrType::Uint),
         "std::vec::Vec" | "Vec" => {
-            let param = match path.segments.iter().last() {
+            let param_attr = match path.segments.iter().last() {
                 Some(&PathSegment {
                     parameters: AngleBracketedParameters(AngleBracketedParameterData {
                         types: ref tys,
                         ..
                     }),
                     ..
-                }) => &tys[0],
+                }) => {
+                    assert!(tys.len() == 1, "Paths must have one and only one type parameter");
+                    ty_to_attr_type(&tys[0])
+                },
                 segm => panic!("There should be a angle brackets in Vec type: {}", segm),
             };
-            let param_path = match param.node {
-                TyPath(ref path, _) => path,
-                ref ty => panic!("Shouldn't a vector contain only paths? Or maybe also ptrs? Ty: {}", ty),
-            };
-            let param_attr_type = path_to_attr_type(param_path);
 
-            match param_attr_type {
+            match param_attr {
                 Some(p) => Some( AttrType::Sequence(box p) ),
                 None => None
             }
@@ -62,13 +71,11 @@ fn get_field_info(ecx: &mut ExtCtxt, field: &StructField) -> (Option<Ident>, Opt
         UnnamedField(_) => None,
     };
 
-    let field_type = match field.node.ty.node {
-        TyPath(ref path, _) => path_to_attr_type(path),
-        ref ty => {
-            ecx.span_warn(field.node.ty.span, format!("Unsupported type expression {} for automatic model instantiation!", ty).as_slice());
-            None
-        }
-    };
+    let field_type = ty_to_attr_type(&field.node.ty);
+
+    if field_type == None {
+        ecx.span_warn(field.node.ty.span, format!("Unsupported type expression {} for automatic model instantiation!", field.node.ty.node).as_slice());
+    }
 
     (field_name, field_type)
 }

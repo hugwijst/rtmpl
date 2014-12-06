@@ -15,7 +15,7 @@ pub trait Attr<'a> {
 }
 
 pub trait ToAttr {
-    fn to_attr<'a>(&'a self) -> Box<Attr>;
+    fn to_attr(&self) -> Box<Attr>;
 }
 
 struct StringAttr<'a> {
@@ -31,13 +31,13 @@ impl<'a> Attr<'a> for StringAttr<'a> {
 }
 
 impl<'b> ToAttr for &'b str {
-    fn to_attr<'a>(&'a self) -> Box<Attr + 'a> {
+    fn to_attr(&self) -> Box<Attr> {
         return box StringAttr { data: *self } as Box<Attr>
     }
 }
 
 impl ToAttr for String {
-    fn to_attr<'a>(&'a self) -> Box<Attr + 'a> {
+    fn to_attr(&self) -> Box<Attr> {
         return box StringAttr { data: self.as_slice() } as Box<Attr>
     }
 }
@@ -56,7 +56,7 @@ impl<'a> Attr<'a> for IntAttr<'a> {
 
 macro_rules! to_attr ( ($struct_:ident, $t1:ty, $t2:ty) => {
     impl ToAttr for $t1 {
-        fn to_attr<'a>(&'a self) -> Box<Attr> {
+        fn to_attr(&self) -> Box<Attr> {
             return box $struct_ { data: *self as $t2 } as Box<Attr>
         }
     }
@@ -111,13 +111,13 @@ impl <'a, A: ToAttr + 'a, I: Iterator<&'a A> + Clone + 'a> Attr<'a> for SeqAttr<
 }
 
 impl <A: ToAttr> ToAttr for Vec<A> {
-    fn to_attr<'a>(&'a self) -> Box<Attr> {
+    fn to_attr(&self) -> Box<Attr> {
         return box SeqAttr { data: box self.iter() } as Box<Attr>
     }
 }
 
 impl <A: ToAttr> ToAttr for DList<A> {
-    fn to_attr<'a>(&'a self) -> Box<Attr> {
+    fn to_attr(&self) -> Box<Attr> {
         return box SeqAttr { data: box self.iter() } as Box<Attr>
     }
 }

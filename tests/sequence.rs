@@ -87,3 +87,33 @@ fn simple_sequence_model() {
     let attr_vals : Vec<i64> = attr.iter().map(|ref attr| attr.get_int()).collect();
     assert!(attr_vals == vec![-64, 0, std::i64::MIN as i64, std::i64::MAX as i64]);
 }
+
+#[model]
+struct SequenceOfSequenceModel {
+    uints: Vec<Vec<u64>>,
+}
+
+#[test]
+fn sequence_of_sequence_model() {
+    let vec_of_vecs = vec![
+        vec![1, 2, 3],
+        vec![2, 3],
+        vec![],
+        vec![4],
+    ];
+
+    let model = SequenceOfSequenceModel {
+        uints: vec_of_vecs.clone(),
+    };
+
+    assert!(Model::__get_type("uints", None::<SequenceOfSequenceModel>).unwrap() == AttrType::Sequence(box AttrType::Sequence(box AttrType::Uint)));
+
+    let attr = model.__get_attr("uints");
+    let attr_vals : Vec<Vec<u64>> = attr
+        .iter().map(|ref attr| attr
+             .iter().map(|ref attr| {
+                 attr.get_uint()
+             }).collect()
+        ).collect();
+    assert!(attr_vals == vec_of_vecs);
+}

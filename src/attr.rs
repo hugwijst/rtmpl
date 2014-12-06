@@ -1,7 +1,5 @@
 use std::iter::IteratorExt;
 
-use model::AttrType;
-
 fn error(ty_expected: &str, ty_used: &str) -> ! {
     panic!("Unable to use type \"{}\" as type \"{}\"!", ty_expected, ty_used);
 }
@@ -12,7 +10,7 @@ pub trait Attr<'a> {
     fn get_string(&self) -> &'a str { error("String", self.get_type()) }
     fn get_int(&self) -> i64 { error("String", self.get_type()) }
     fn get_uint(&self) -> u64 { error("String", self.get_type()) }
-    fn iter(&'a self) -> SeqIter<'a> { error("String", self.get_type()) }
+    fn iter(&self) -> SeqIter<'a> { error("String", self.get_type()) }
 }
 
 pub trait ToAttr {
@@ -86,7 +84,6 @@ to_attr!(UintAttr, u32, u64)
 to_attr!(UintAttr, u64, u64)
 
 pub struct SeqAttr<'a, A: ToAttr, I: Iterator<&'a A> + Clone> {
-    pub data_ty: AttrType,
     pub data: Box<I>,
 }
 
@@ -104,11 +101,17 @@ impl<'a> Iterator<Box<Attr<'a> + 'a>> for SeqIter<'a> {
     }
 }
 
-impl <'a, A: ToAttr + 'a, I: Iterator<&'a A> + Clone> Attr<'a> for SeqAttr<'a, A, I> {
+impl <'a, A: ToAttr + 'a, I: Iterator<&'a A> + Clone + 'a> Attr<'a> for SeqAttr<'a, A, I> {
     fn get_type(&self) -> &'static str { "Sequence" }
 
-    fn iter(&'a self) -> SeqIter<'a> {
+    fn iter(&self) -> SeqIter<'a> {
         SeqIter { iter: box self.data.clone().map(|a: &'a A| a.to_attr()) }
+    }
+}
+
+impl <A: ToAttr> ToAttr for Vec<A> {
+    fn to_attr<'a>(&'a self) -> Box<Attr> {
+        return box SeqAttr { data: box self.iter() } as Box<Attr>
     }
 }
 

@@ -220,9 +220,8 @@ fn model_template(ecx: &mut ExtCtxt, span: Span, meta_item: &MetaItem, item: &It
                         _ => false,
                     }
                 }
-                fn arm_expr_fn(span: Span, cx: &ExtCtxt, ident: Ident, ty: &AttrType) -> P<Expr> {
+                fn arm_expr_fn(span: Span, cx: &ExtCtxt, ident: Ident, _ty: &AttrType) -> P<Expr> {
                     let fields = vec![
-                        cx.field_imm(span, cx.ident_of("data_ty"), ty.to_expr(cx, span)),
                         cx.field_imm(span, cx.ident_of("data"), cx.expr_unary(span, UnOp::UnUniq, cx.expr_method_call(span, cx.expr_field_access(span, cx.expr_self(span), ident), cx.ident_of("iter"), Vec::new()))),
                     ];
                     let attr = cx.expr_struct(span, cx.path(span, vec!["rtmpl", "attr", "SeqAttr"].iter().map(|&s| cx.ident_of(s)).collect()), fields);

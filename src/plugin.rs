@@ -231,7 +231,7 @@ fn model_template(ecx: &mut ExtCtxt, span: Span, meta_item: &MetaItem, item: &It
                         Vec::new(),
                         vec![attr_ty]
                     ) );
-                    cx.expr_cast(span, cx.expr_unary(span, UnOp::UnUniq, attr), box_ty)
+                    cx.expr_some(span, cx.expr_cast(span, cx.expr_unary(span, UnOp::UnUniq, attr), box_ty))
                 };
                 match_for_type(is_ty, &struct_def.fields, cx, span, substr, arm_expr_fn)
             };
@@ -280,7 +280,8 @@ fn model_template(ecx: &mut ExtCtxt, span: Span, meta_item: &MetaItem, item: &It
                 );
 
             let attr_type = box Literal( Path::new(vec!["rtmpl", "attr", "Attr"]) );
-            let boxed_attr_type = Literal( Path::new_(vec!["std", "boxed", "Box"], None, vec![attr_type], true) );
+            let boxed_attr_type = box Literal( Path::new_(vec!["std", "boxed", "Box"], None, vec![attr_type], true) );
+            let option_boxed_attr_type = Literal( Path::new_(vec!["std", "option", "Option"], None, vec![boxed_attr_type], true) );
 
             let trait_def = TraitDef {
                 span: span,
@@ -293,7 +294,7 @@ fn model_template(ecx: &mut ExtCtxt, span: Span, meta_item: &MetaItem, item: &It
                     md_get!("__get_string", Vec::new(), Some(Some(Borrowed(Some("'a"), MutImmutable))), Ptr( box Literal(Path::new(vec!("str"))), Borrowed(Some("'a"), MutImmutable) ), get_str),
                     md_get!("__get_int", Vec::new(), borrowed_explicit_self(), Literal(Path::new(vec!("i64"))), get_int),
                     md_get!("__get_uint", Vec::new(), borrowed_explicit_self(), Literal(Path::new(vec!("u64"))), get_uint),
-                    md_get!("__get_attr", Vec::new(), borrowed_explicit_self(), boxed_attr_type, get_attr),
+                    md_get!("__get_attr", Vec::new(), borrowed_explicit_self(), option_boxed_attr_type, get_attr),
                     )
             };
             trait_def.expand(ecx, meta_item, item, push)

@@ -47,43 +47,43 @@ fn simple_sequence_model() {
     assert!(Model::__get_type("ints32", None::<BasicTypeSequenceModel>).unwrap() == AttrType::Sequence(box AttrType::Int));
     assert!(Model::__get_type("ints64", None::<BasicTypeSequenceModel>).unwrap() == AttrType::Sequence(box AttrType::Int));
 
-    let attr = model.__get_attr("strs");
+    let attr = model.__get_attr("strs").unwrap();
     let attr_vals : Vec<&str> = attr.iter().map(|ref attr| attr.get_string()).collect();
     assert!(attr_vals == vec!["str 1", "str 2"]);
 
-    let attr = model.__get_attr("strings");
+    let attr = model.__get_attr("strings").unwrap();
     let attr_vals : Vec<&str> = attr.iter().map(|ref attr| attr.get_string()).collect();
     assert!(attr_vals == vec!["string 1", "string 2"]);
 
-    let attr = model.__get_attr("uints8");
+    let attr = model.__get_attr("uints8").unwrap();
     let attr_vals : Vec<u64> = attr.iter().map(|ref attr| attr.get_uint()).collect();
     assert!(attr_vals == vec![8, 0, std::u8::MIN as u64, std::u8::MAX as u64]);
 
-    let attr = model.__get_attr("uints16");
+    let attr = model.__get_attr("uints16").unwrap();
     let attr_vals : Vec<u64> = attr.iter().map(|ref attr| attr.get_uint()).collect();
     assert!(attr_vals == vec![16, 0, std::u16::MIN as u64, std::u16::MAX as u64]);
 
-    let attr = model.__get_attr("uints32");
+    let attr = model.__get_attr("uints32").unwrap();
     let attr_vals : Vec<u64> = attr.iter().map(|ref attr| attr.get_uint()).collect();
     assert!(attr_vals == vec![32, 0, std::u32::MIN as u64, std::u32::MAX as u64]);
 
-    let attr = model.__get_attr("uints64");
+    let attr = model.__get_attr("uints64").unwrap();
     let attr_vals : Vec<u64> = attr.iter().map(|ref attr| attr.get_uint()).collect();
     assert!(attr_vals == vec![64, 0, std::u64::MIN as u64, std::u64::MAX as u64]);
 
-    let attr = model.__get_attr("ints8");
+    let attr = model.__get_attr("ints8").unwrap();
     let attr_vals : Vec<i64> = attr.iter().map(|ref attr| attr.get_int()).collect();
     assert!(attr_vals == vec![-8, 0, std::i8::MIN as i64, std::i8::MAX as i64]);
 
-    let attr = model.__get_attr("ints16");
+    let attr = model.__get_attr("ints16").unwrap();
     let attr_vals : Vec<i64> = attr.iter().map(|ref attr| attr.get_int()).collect();
     assert!(attr_vals == vec![-16, 0, std::i16::MIN as i64, std::i16::MAX as i64]);
 
-    let attr = model.__get_attr("ints32");
+    let attr = model.__get_attr("ints32").unwrap();
     let attr_vals : Vec<i64> = attr.iter().map(|ref attr| attr.get_int()).collect();
     assert!(attr_vals == vec![-32, 0, std::i32::MIN as i64, std::i32::MAX as i64]);
 
-    let attr = model.__get_attr("ints64");
+    let attr = model.__get_attr("ints64").unwrap();
     let attr_vals : Vec<i64> = attr.iter().map(|ref attr| attr.get_int()).collect();
     assert!(attr_vals == vec![-64, 0, std::i64::MIN as i64, std::i64::MAX as i64]);
 }
@@ -108,7 +108,7 @@ fn sequence_of_sequence_model() {
 
     assert!(Model::__get_type("uints", None::<SequenceOfSequenceModel>).unwrap() == AttrType::Sequence(box AttrType::Sequence(box AttrType::Uint)));
 
-    let attr = model.__get_attr("uints");
+    let attr = model.__get_attr("uints").unwrap();
     let attr_vals : Vec<Vec<u64>> = attr
         .iter().map(|ref attr| attr
              .iter().map(|ref attr| {
@@ -133,7 +133,7 @@ fn unusual_sequence_model() {
 
     assert!(Model::__get_type("d_list", None::<UnusualSequenceModel>).unwrap() == AttrType::Sequence(box AttrType::Uint));
 
-    let attr = model.__get_attr("d_list");
+    let attr = model.__get_attr("d_list").unwrap();
     let attr_vals : Vec<u64> = attr.iter().map(|ref attr| attr.get_uint()).collect();
     assert!(attr_vals == vec![1, 2, 3, 4]);
 }

@@ -65,17 +65,13 @@ fn path_to_attr_type(path: &AstPath) -> Option<AttrType> {
 // TODO: add support for unnamed fields?
 // TODO: find a better way to identify types
 // TODO: annotate fields with attributes to pass extra information
-fn get_field_info(ecx: &mut ExtCtxt, field: &StructField) -> (Option<Ident>, Option<AttrType>) {
+fn get_field_info(field: &StructField) -> (Option<Ident>, Option<AttrType>) {
     let field_name = match field.node.kind {
         NamedField(ident, _) => Some(ident),
         UnnamedField(_) => None,
     };
 
     let field_type = ty_to_attr_type(&field.node.ty);
-
-    if field_type == None {
-        ecx.span_warn(field.node.ty.span, format!("Unsupported type expression {} for automatic model instantiation!", field.node.ty.node).as_slice());
-    }
 
     (field_name, field_type)
 }
@@ -99,7 +95,7 @@ fn model_template(ecx: &mut ExtCtxt, span: Span, meta_item: &MetaItem, item: &It
             let get_type = |cx: &mut ExtCtxt, span: Span, substr: &Substructure| -> P<Expr> {
                 // Get the name and type of each named field
                 let mut fields : Vec<Arm> = struct_def.fields.iter().filter_map(|field| {
-                    let info = get_field_info(cx, field);
+                    let info = get_field_info(field);
 
                     match info {
                         // Known type, named field
@@ -151,7 +147,7 @@ fn model_template(ecx: &mut ExtCtxt, span: Span, meta_item: &MetaItem, item: &It
                               arm_expr_fn: GetArmExpr) -> P<Expr> {
                 // Get the name and type of each named field
                 let mut fields : Vec<Arm> = str_fields.iter().filter_map(|field| {
-                    let info = get_field_info(cx, field);
+                    let info = get_field_info(field);
 
                     match info {
                         // Known type, named field

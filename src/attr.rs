@@ -1,3 +1,4 @@
+use std::collections::DList;
 use std::iter::IteratorExt;
 
 fn error(ty_expected: &str, ty_used: &str) -> ! {
@@ -110,6 +111,12 @@ impl <'a, A: ToAttr + 'a, I: Iterator<&'a A> + Clone + 'a> Attr<'a> for SeqAttr<
 }
 
 impl <A: ToAttr> ToAttr for Vec<A> {
+    fn to_attr<'a>(&'a self) -> Box<Attr> {
+        return box SeqAttr { data: box self.iter() } as Box<Attr>
+    }
+}
+
+impl <A: ToAttr> ToAttr for DList<A> {
     fn to_attr<'a>(&'a self) -> Box<Attr> {
         return box SeqAttr { data: box self.iter() } as Box<Attr>
     }

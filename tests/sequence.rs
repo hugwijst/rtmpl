@@ -117,3 +117,23 @@ fn sequence_of_sequence_model() {
         ).collect();
     assert!(attr_vals == vec_of_vecs);
 }
+
+#[model]
+struct UnusualSequenceModel {
+    d_list: std::collections::DList<u64>,
+}
+
+#[test]
+fn unusual_sequence_model() {
+    let vals1 = vec![1, 2, 3, 4];
+
+    let model = UnusualSequenceModel {
+        d_list: vals1.iter().map(|&v| v).collect(),
+    };
+
+    assert!(Model::__get_type("d_list", None::<UnusualSequenceModel>).unwrap() == AttrType::Sequence(box AttrType::Uint));
+
+    let attr = model.__get_attr("d_list");
+    let attr_vals : Vec<u64> = attr.iter().map(|ref attr| attr.get_uint()).collect();
+    assert!(attr_vals == vec![1, 2, 3, 4]);
+}

@@ -4,20 +4,21 @@ use syntax::ast::{AngleBracketedParameters, AngleBracketedParameterData};
 use syntax::ast::{Expr, Ident, Item, ItemStruct, MetaItem, MetaWord};
 use syntax::ast::MutImmutable;
 use syntax::ast::{NamedField, StructField, UnnamedField};
-use syntax::ast::{Ty, Ty_, MutTy, PathSegment};
+use syntax::ast::{Ty_, MutTy, PathSegment};
 use syntax::ast::Path as AstPath;
+use syntax::ast::Ty as AstTy;
 use syntax::ast::UnOp;
 use syntax::codemap::{Span};
 use syntax::ext::base::{Decorator, ExtCtxt};
 use syntax::ext::build::AstBuilder;
 use syntax::ext::deriving::generic::{combine_substructure, MethodDef, Substructure, TraitDef};
-use syntax::ext::deriving::generic::ty::{borrowed, borrowed_explicit_self, Borrowed, LifetimeBounds, Literal, Path, Ptr, Self};
+use syntax::ext::deriving::generic::ty::{borrowed, borrowed_explicit_self, Borrowed, LifetimeBounds, Literal, Path, Ptr, Self, Ty};
 use syntax::parse::token;
 use syntax::ptr::P;
 
 use model::AttrType;
 
-fn ty_to_attr_type(ty: &P<Ty>) -> Option<AttrType> {
+fn ty_to_attr_type(ty: &P<AstTy>) -> Option<AttrType> {
     match ty.node {
         Ty_::TyPath(ref path, _) => path_to_attr_type(path),
         Ty_::TyRptr(_, MutTy { ty: ref ty_, .. }) => {
@@ -169,9 +170,7 @@ fn model_template(ecx: &mut ExtCtxt, span: Span, meta_item: &MetaItem, item: &It
                 }).collect();
 
                 // Add the final arm: "_ => None"
-                let failure_str = "This function should not be called with an incorrect identifier!";
-                let failure_istr = token::get_ident(cx.ident_of(failure_str));
-                fields.push(cx.arm(span, vec!(cx.pat_wild(span)), cx.expr_fail(span, failure_istr)));
+                fields.push(cx.arm(span, vec!(cx.pat_wild(span)), cx.expr_none(span)));
 
                 // Return the constructed match statement
                 cx.expr_match(span,
@@ -185,7 +184,8 @@ fn model_template(ecx: &mut ExtCtxt, span: Span, meta_item: &MetaItem, item: &It
                     *ty == AttrType::String
                 }
                 fn arm_expr_fn(span: Span, cx: &ExtCtxt, ident: Ident, _ty: &AttrType) -> P<Expr> {
-                    cx.expr_method_call(span, cx.expr_field_access(span, cx.expr_self(span), ident), cx.ident_of("as_slice"), Vec::new())
+                    let res = cx.expr_method_call(span, cx.expr_field_access(span, cx.expr_self(span), ident), cx.ident_of("as_slice"), Vec::new());
+                    cx.expr_some(span, res)
                 };
                 match_for_type(is_ty, &struct_def.fields, cx, span, substr, arm_expr_fn)
             };
@@ -195,7 +195,8 @@ fn model_template(ecx: &mut ExtCtxt, span: Span, meta_item: &MetaItem, item: &It
                     *ty == AttrType::Int
                 }
                 fn arm_expr_fn(span: Span, cx: &ExtCtxt, ident: Ident, _ty: &AttrType) -> P<Expr> {
-                    cx.expr_cast(span, cx.expr_field_access(span, cx.expr_self(span), ident), cx.ty_ident(span, cx.ident_of("i64")))
+                    let res = cx.expr_cast(span, cx.expr_field_access(span, cx.expr_self(span), ident), cx.ty_ident(span, cx.ident_of("i64")));
+                    cx.expr_some(span, res)
                 };
                 match_for_type(is_ty, &struct_def.fields, cx, span, substr, arm_expr_fn)
             };
@@ -205,7 +206,8 @@ fn model_template(ecx: &mut ExtCtxt, span: Span, meta_item: &MetaItem, item: &It
                     *ty == AttrType::Uint
                 }
                 fn arm_expr_fn(span: Span, cx: &ExtCtxt, ident: Ident, _ty: &AttrType) -> P<Expr> {
-                    cx.expr_cast(span, cx.expr_field_access(span, cx.expr_self(span), ident), cx.ty_ident(span, cx.ident_of("u64")))
+                    let res = cx.expr_cast(span, cx.expr_field_access(span, cx.expr_self(span), ident), cx.ty_ident(span, cx.ident_of("u64")));
+                    cx.expr_some(span, res)
                 };
                 match_for_type(is_ty, &struct_def.fields, cx, span, substr, arm_expr_fn)
             };
@@ -280,8 +282,11 @@ fn model_template(ecx: &mut ExtCtxt, span: Span, meta_item: &MetaItem, item: &It
                 );
 
             let attr_type = box Literal( Path::new(vec!["rtmpl", "attr", "Attr"]) );
-            let boxed_attr_type = box Literal( Path::new_(vec!["std", "boxed", "Box"], None, vec![attr_type], true) );
-            let option_boxed_attr_type = Literal( Path::new_(vec!["std", "option", "Option"], None, vec![boxed_attr_type], true) );
+            let boxed_attr_type = Literal( Path::new_(vec!["std", "boxed", "Box"], None, vec![attr_type], true) );
+
+            fn option(ty : Ty) -> Ty {
+                Literal( Path::new_(vec!["std", "option", "Option"], None, vec![box ty], true) )
+            }
 
             let trait_def = TraitDef {
                 span: span,
@@ -291,10 +296,10 @@ fn model_template(ecx: &mut ExtCtxt, span: Span, meta_item: &MetaItem, item: &It
                 generics: LifetimeBounds::empty(),
                 methods: vec!(
                     md_get_type,
-                    md_get!("__get_string", Vec::new(), Some(Some(Borrowed(Some("'a"), MutImmutable))), Ptr( box Literal(Path::new(vec!("str"))), Borrowed(Some("'a"), MutImmutable) ), get_str),
-                    md_get!("__get_int", Vec::new(), borrowed_explicit_self(), Literal(Path::new(vec!("i64"))), get_int),
-                    md_get!("__get_uint", Vec::new(), borrowed_explicit_self(), Literal(Path::new(vec!("u64"))), get_uint),
-                    md_get!("__get_attr", Vec::new(), borrowed_explicit_self(), option_boxed_attr_type, get_attr),
+                    md_get!("__get_string", Vec::new(), Some(Some(Borrowed(Some("'a"), MutImmutable))), option(Ptr( box Literal(Path::new(vec!("str"))), Borrowed(Some("'a"), MutImmutable) )), get_str),
+                    md_get!("__get_int", Vec::new(), borrowed_explicit_self(), option( Literal(Path::new(vec!("i64"))) ), get_int),
+                    md_get!("__get_uint", Vec::new(), borrowed_explicit_self(), option( Literal(Path::new(vec!("u64"))) ), get_uint),
+                    md_get!("__get_attr", Vec::new(), borrowed_explicit_self(), option(boxed_attr_type), get_attr),
                     )
             };
             trait_def.expand(ecx, meta_item, item, push)

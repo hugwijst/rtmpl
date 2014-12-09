@@ -39,9 +39,9 @@ fn compound_str() {
     assert!(Model::__get_type("uint32", None::<TestModel>).unwrap() == rtmpl::model::AttrType::Uint);
     assert!(Model::__get_type("int32", None::<TestModel>).unwrap() == rtmpl::model::AttrType::Int);
     assert!(Model::__get_type("n/a", None::<TestModel>).is_none());
-    assert!(model.__get_string("string") == "World");
-    assert!(model.__get_uint("uint32") == 184);
-    assert!(model.__get_int("int32") == -330);
+    assert!(model.__get_string("string").unwrap() == "World");
+    assert!(model.__get_uint("uint32").unwrap() == 184);
+    assert!(model.__get_int("int32").unwrap() == -330);
 
     assert!(tmpl.render(&model).as_slice() == "Hello World!");
 }

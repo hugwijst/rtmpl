@@ -54,17 +54,12 @@ impl AttrType {
 pub trait Model {
     fn __get_type(attr: &str, _ignored: Option<Self>) -> Option<AttrType>;
     fn __get_attr(&self, attr: &str) -> Option<Box<Attr>>;
-    fn __get_string<'a>(&'a self, attr: &str) -> &'a str;
-    fn __get_int(&self, attr: &str) -> i64;
-    fn __get_uint(&self, attr: &str) -> u64;
-    //fn __get_sequence<'a, A>(&self, attr: &str) -> Box<Iterator<&'a A>>;
+    fn __get_string<'a>(&'a self, attr: &str) -> Option<&'a str>;
+    fn __get_int(&self, attr: &str) -> Option<i64>;
+    fn __get_uint(&self, attr: &str) -> Option<u64>;
 }
 
 pub struct EmptyModel;
-
-fn error() -> ! {
-    panic!("This function should not be called with an incorrect identifier!");
-}
 
 impl Model for EmptyModel {
     fn __get_type(_attr: &str, _ignored: Option<EmptyModel>) -> Option<AttrType> {
@@ -74,16 +69,13 @@ impl Model for EmptyModel {
     fn __get_attr(&self, _attr: &str) -> Option<Box<Attr>> {
         None
     }
-    fn __get_string<'a>(&'a self, _attr: &str) -> &'a str {
-        error();
+    fn __get_string<'a>(&'a self, _attr: &str) -> Option<&'a str> {
+        None
     }
-    fn __get_int(&self, _attr: &str) -> i64 {
-        error();
+    fn __get_int(&self, _attr: &str) -> Option<i64> {
+        None
     }
-    fn __get_uint(&self, _attr: &str) -> u64 {
-        error();
+    fn __get_uint(&self, _attr: &str) -> Option<u64> {
+        None
     }
-    //fn __get_sequence<'a, A>(&self, _attr: &str) -> Box<Iterator<&'a A>> {
-    //    error();
-    //}
 }

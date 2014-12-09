@@ -76,9 +76,9 @@ impl <M: Model> StringTemplate<M> {
             match *item {
                 &Item::Text { ref text } => res.push_str(text.as_slice()),
                 &Item::Expr { expr: Expr::Field { ref name, ref ty } } => match ty {
-                    &AttrType::String => res.push_str(model.__get_string(name.as_slice())),
-                    &AttrType::Int => res.push_str(model.__get_int(name.as_slice()).to_string().as_slice()),
-                    &AttrType::Uint => res.push_str(model.__get_uint(name.as_slice()).to_string().as_slice()),
+                    &AttrType::String => res.push_str(model.__get_string(name.as_slice()).unwrap()),
+                    &AttrType::Int => res.push_str(model.__get_int(name.as_slice()).unwrap().to_string().as_slice()),
+                    &AttrType::Uint => res.push_str(model.__get_uint(name.as_slice()).unwrap().to_string().as_slice()),
                     &AttrType::Sequence(_) => (),
                 }
             }

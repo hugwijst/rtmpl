@@ -66,6 +66,7 @@ to_attr!(IntAttr, i8,  i64)
 to_attr!(IntAttr, i16, i64)
 to_attr!(IntAttr, i32, i64)
 to_attr!(IntAttr, i64, i64)
+to_attr!(IntAttr, int, i64)
 
 struct UintAttr<'a> {
     data: u64,
@@ -83,6 +84,7 @@ to_attr!(UintAttr, u8,  u64)
 to_attr!(UintAttr, u16, u64)
 to_attr!(UintAttr, u32, u64)
 to_attr!(UintAttr, u64, u64)
+to_attr!(UintAttr, uint, u64)
 
 pub struct SeqAttr<'a, A: ToAttr, I: Iterator<&'a A> + Clone> {
     pub data: Box<I>,

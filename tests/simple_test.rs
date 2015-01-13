@@ -1,6 +1,6 @@
-#![feature(phase)]
+#![feature(plugin)]
 
-#[phase(plugin, link)]
+#[plugin]
 extern crate rtmpl;
 
 use rtmpl::{EmptyModel, Model, StringTemplate};

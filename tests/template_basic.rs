@@ -1,7 +1,6 @@
-#![feature(macro_rules)]
-#![feature(phase)]
+#![feature(plugin)]
 
-#[phase(plugin, link)]
+#[plugin]
 extern crate rtmpl;
 
 use rtmpl::{EmptyModel, Model, StringTemplate};
@@ -24,7 +23,7 @@ fn hello_world() {
 // TODO: Should be moved to library proper?
 macro_rules! template_from_file( ($file:expr) => (
     StringTemplate::from_str(include_str!($file))
-) )
+) );
 
 #[test]
 fn from_file() {

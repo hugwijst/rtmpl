@@ -6,7 +6,7 @@ use syntax::ptr::P;
 
 use attr::Attr;
 
-#[deriving(PartialEq,Show)]
+#[derive(PartialEq,Show)]
 pub enum AttrType {
     String,
     Int,

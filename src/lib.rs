@@ -1,5 +1,4 @@
-#![feature(globs)]
-#![feature(macro_rules)]
+#![feature(box_syntax)]
 #![feature(plugin_registrar)]
 
 extern crate syntax;

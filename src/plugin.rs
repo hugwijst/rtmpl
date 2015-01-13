@@ -25,7 +25,7 @@ fn ty_to_attr_type(ty: &P<AstTy>) -> Option<AttrType> {
             // TODO: figure out how we want to handle pointers
             ty_to_attr_type(ty_)
         }
-        ref ty => panic!("Unsupported type! ty: {}", ty),
+        ref ty => panic!("Unsupported type! ty: {:?}", ty),
     }
 }
 
@@ -51,7 +51,7 @@ fn path_to_attr_type(path: &AstPath) -> Option<AttrType> {
                     assert!(tys.len() == 1, "Paths must have one and only one type parameter");
                     ty_to_attr_type(&tys[0])
                 },
-                segm => panic!("There should be a angle brackets in Vec type: {}", segm),
+                segm => panic!("There should be a angle brackets in Vec type: {:?}", segm),
             };
 
             match param_attr {
@@ -78,7 +78,7 @@ fn get_field_info(field: &StructField) -> (Option<Ident>, Option<AttrType>) {
     (field_name, field_type)
 }
 
-fn model_template(ecx: &mut ExtCtxt, span: Span, meta_item: &MetaItem, item: &Item, push: |P<Item>|) {
+fn model_template(ecx: &mut ExtCtxt, span: Span, meta_item: &MetaItem, item: &Item, mut push: Box<FnMut(P<Item>)>) {
     match meta_item.node {
         MetaWord(_) => {
             let pat_attr_type = Path::new(vec!("rtmpl", "model", "AttrType"));
@@ -94,7 +94,7 @@ fn model_template(ecx: &mut ExtCtxt, span: Span, meta_item: &MetaItem, item: &It
                 _ => panic!("We only support structures for now."),
             };
 
-            let get_type = |cx: &mut ExtCtxt, span: Span, substr: &Substructure| -> P<Expr> {
+            let get_type = |&: cx: &mut ExtCtxt, span: Span, substr: &Substructure| -> P<Expr> {
                 // Get the name and type of each named field
                 let mut fields : Vec<Arm> = struct_def.fields.iter().filter_map(|field| {
                     let info = get_field_info(field);
@@ -138,8 +138,8 @@ fn model_template(ecx: &mut ExtCtxt, span: Span, meta_item: &MetaItem, item: &It
                 )
             };
 
-            type MatchType<'a> = |&AttrType|: 'a -> bool;
-            type GetArmExpr<'a> = |Span, &ExtCtxt, Ident, &AttrType|: 'a -> P<Expr>;
+            type MatchType = fn(&AttrType) -> bool;
+            type GetArmExpr = fn(Span, &ExtCtxt, Ident, &AttrType) -> P<Expr>;
 
             fn match_for_type(is_ty: MatchType,
                               str_fields: &Vec<StructField>,
@@ -179,7 +179,7 @@ fn model_template(ecx: &mut ExtCtxt, span: Span, meta_item: &MetaItem, item: &It
                 )
             }
 
-            let get_str = |cx: &mut ExtCtxt, span: Span, substr: &Substructure| -> P<Expr> {
+            let get_str = |&: cx: &mut ExtCtxt, span: Span, substr: &Substructure| -> P<Expr> {
                 fn is_ty(ty: &AttrType) -> bool {
                     *ty == AttrType::String
                 }
@@ -190,7 +190,7 @@ fn model_template(ecx: &mut ExtCtxt, span: Span, meta_item: &MetaItem, item: &It
                 match_for_type(is_ty, &struct_def.fields, cx, span, substr, arm_expr_fn)
             };
 
-            let get_int = |cx: &mut ExtCtxt, span: Span, substr: &Substructure| -> P<Expr> {
+            let get_int = |&: cx: &mut ExtCtxt, span: Span, substr: &Substructure| -> P<Expr> {
                 fn is_ty(ty: &AttrType) -> bool {
                     *ty == AttrType::Int
                 }
@@ -201,7 +201,7 @@ fn model_template(ecx: &mut ExtCtxt, span: Span, meta_item: &MetaItem, item: &It
                 match_for_type(is_ty, &struct_def.fields, cx, span, substr, arm_expr_fn)
             };
 
-            let get_uint = |cx: &mut ExtCtxt, span: Span, substr: &Substructure| -> P<Expr> {
+            let get_uint = |&: cx: &mut ExtCtxt, span: Span, substr: &Substructure| -> P<Expr> {
                 fn is_ty(ty: &AttrType) -> bool {
                     *ty == AttrType::Uint
                 }
@@ -212,7 +212,7 @@ fn model_template(ecx: &mut ExtCtxt, span: Span, meta_item: &MetaItem, item: &It
                 match_for_type(is_ty, &struct_def.fields, cx, span, substr, arm_expr_fn)
             };
 
-            let get_attr = |cx: &mut ExtCtxt, span: Span, substr: &Substructure| -> P<Expr> {
+            let get_attr = |&: cx: &mut ExtCtxt, span: Span, substr: &Substructure| -> P<Expr> {
                 fn is_ty(ty: &AttrType) -> bool {
                     match ty {
                         &AttrType::Sequence(_) => true,
@@ -231,7 +231,8 @@ fn model_template(ecx: &mut ExtCtxt, span: Span, meta_item: &MetaItem, item: &It
                         true,
                         vec!["std", "boxed", "Box"].iter().map(|&s| cx.ident_of(s)).collect(),
                         Vec::new(),
-                        vec![attr_ty]
+                        vec![attr_ty],
+                        Vec::new(),
                     ) );
                     cx.expr_some(span, cx.expr_cast(span, cx.expr_unary(span, UnOp::UnUniq, attr), box_ty))
                 };
@@ -249,7 +250,7 @@ fn model_template(ecx: &mut ExtCtxt, span: Span, meta_item: &MetaItem, item: &It
                         args: $args,
                         ret_ty: $ret,
                         attributes: attrs,
-                        combine_substructure: combine_substructure(|a, b, c| {
+                        combine_substructure: combine_substructure(box |a, b, c| {
                             $f(a, b, c)
                         })
                     }
@@ -302,7 +303,7 @@ fn model_template(ecx: &mut ExtCtxt, span: Span, meta_item: &MetaItem, item: &It
                     md_get!("__get_attr", Vec::new(), borrowed_explicit_self(), option(boxed_attr_type), get_attr),
                     )
             };
-            trait_def.expand(ecx, meta_item, item, push)
+            trait_def.expand(ecx, meta_item, item, |i| push(i))
         }
         _ => {
             ecx.span_err(meta_item.span, "unsupported trait list in `model`");

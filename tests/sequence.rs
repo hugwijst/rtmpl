@@ -1,7 +1,7 @@
-#![feature(macro_rules)]
-#![feature(phase)]
+#![feature(box_syntax)]
+#![feature(plugin)]
 
-#[phase(plugin, link)]
+#[plugin]
 extern crate rtmpl;
 
 use rtmpl::{Model, StringTemplate};

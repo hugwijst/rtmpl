@@ -5,7 +5,7 @@
 extern crate rtmpl;
 
 use rtmpl::{Model};
-use rtmpl::model::AttrType;
+use rtmpl::attr_type::AttrType;
 
 #[model]
 struct BasicTypeSequenceModel {

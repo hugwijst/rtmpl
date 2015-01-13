@@ -4,6 +4,7 @@
 extern crate rtmpl;
 
 use rtmpl::Model;
+use rtmpl::attr_type::AttrType;
 
 #[model]
 struct TestModel {
@@ -40,18 +41,18 @@ fn compound_str() {
 
     // XXX: The none::<> stuff is a hack until Uniform Function Call Syntax (UFCS) is implemented,
     // see http://stackoverflow.com/questions/23674538/name-resolving-error-when-implementing-static-method-from-a-trait
-    assert!(Model::__get_type("str", None::<TestModel>).unwrap() == rtmpl::model::AttrType::String);
-    assert!(Model::__get_type("string", None::<TestModel>).unwrap() == rtmpl::model::AttrType::String);
-    assert!(Model::__get_type("usize" , None::<TestModel>).unwrap() == rtmpl::model::AttrType::Uint);
-    assert!(Model::__get_type("uint8" , None::<TestModel>).unwrap() == rtmpl::model::AttrType::Uint);
-    assert!(Model::__get_type("uint16", None::<TestModel>).unwrap() == rtmpl::model::AttrType::Uint);
-    assert!(Model::__get_type("uint32", None::<TestModel>).unwrap() == rtmpl::model::AttrType::Uint);
-    assert!(Model::__get_type("uint64", None::<TestModel>).unwrap() == rtmpl::model::AttrType::Uint);
-    assert!(Model::__get_type("isize" , None::<TestModel>).unwrap() == rtmpl::model::AttrType::Int);
-    assert!(Model::__get_type("int8" , None::<TestModel>).unwrap() == rtmpl::model::AttrType::Int);
-    assert!(Model::__get_type("int16", None::<TestModel>).unwrap() == rtmpl::model::AttrType::Int);
-    assert!(Model::__get_type("int32", None::<TestModel>).unwrap() == rtmpl::model::AttrType::Int);
-    assert!(Model::__get_type("int64", None::<TestModel>).unwrap() == rtmpl::model::AttrType::Int);
+    assert!(Model::__get_type("str", None::<TestModel>).unwrap() == AttrType::String);
+    assert!(Model::__get_type("string", None::<TestModel>).unwrap() == AttrType::String);
+    assert!(Model::__get_type("usize" , None::<TestModel>).unwrap() == AttrType::Uint);
+    assert!(Model::__get_type("uint8" , None::<TestModel>).unwrap() == AttrType::Uint);
+    assert!(Model::__get_type("uint16", None::<TestModel>).unwrap() == AttrType::Uint);
+    assert!(Model::__get_type("uint32", None::<TestModel>).unwrap() == AttrType::Uint);
+    assert!(Model::__get_type("uint64", None::<TestModel>).unwrap() == AttrType::Uint);
+    assert!(Model::__get_type("isize" , None::<TestModel>).unwrap() == AttrType::Int);
+    assert!(Model::__get_type("int8" , None::<TestModel>).unwrap() == AttrType::Int);
+    assert!(Model::__get_type("int16", None::<TestModel>).unwrap() == AttrType::Int);
+    assert!(Model::__get_type("int32", None::<TestModel>).unwrap() == AttrType::Int);
+    assert!(Model::__get_type("int64", None::<TestModel>).unwrap() == AttrType::Int);
     assert!(Model::__get_type("n/a", None::<TestModel>).is_none());
     assert!(model.__get_string("str").unwrap() == "str");
     assert!(model.__get_string("string").unwrap() == "String");

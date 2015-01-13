@@ -16,7 +16,7 @@ use syntax::ext::deriving::generic::ty::{borrowed, borrowed_explicit_self, Borro
 use syntax::parse::token;
 use syntax::ptr::P;
 
-use model::AttrType;
+use attr_type::AttrType;
 
 fn ty_to_attr_type(ty: &P<AstTy>) -> Option<AttrType> {
     match ty.node {
@@ -81,7 +81,7 @@ fn get_field_info(field: &StructField) -> (Option<Ident>, Option<AttrType>) {
 fn model_template(ecx: &mut ExtCtxt, span: Span, meta_item: &MetaItem, item: &Item, mut push: Box<FnMut(P<Item>)>) {
     match meta_item.node {
         MetaWord(_) => {
-            let pat_attr_type = Path::new(vec!("rtmpl", "model", "AttrType"));
+            let pat_attr_type = Path::new(vec!("rtmpl", "attr_type", "AttrType"));
             let lit_attr_type = Literal(pat_attr_type);
             let pat_option_attr_type = Path::new_(vec!("std", "option", "Option"), None, vec!(box lit_attr_type), true);
             let lit_option_attr_type = Literal(pat_option_attr_type);

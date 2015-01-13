@@ -1,4 +1,5 @@
-use model::{AttrType, Model};
+use attr_type::AttrType;
+use model::Model;
 
 pub trait Template<M: Model> {
     fn render(model: &M) -> String;

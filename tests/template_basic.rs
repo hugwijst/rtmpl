@@ -3,7 +3,7 @@
 #[plugin]
 extern crate rtmpl;
 
-use rtmpl::{EmptyModel, Model, StringTemplate};
+use rtmpl::{EmptyModel, StringTemplate};
 
 #[test]
 fn empty_string() {
@@ -41,12 +41,12 @@ fn from_file() {
 struct BasicTypesModel {
     str: &'static str,
     string: String,
-    uint: uint,
+    usize: usize,
     uint8:  u8,
     uint16: u16,
     uint32: u32,
     uint64: u64,
-    int: int,
+    isize: isize,
     int8:  i8,
     int16: i16,
     int32: i32,
@@ -58,12 +58,12 @@ fn test_basic_types() {
     let model = BasicTypesModel {
         str: "str",
         string: "String".to_string(),
-        uint: std::uint::MAX,
+        usize: std::usize::MAX,
         uint8:  std::u8 ::MAX,
         uint16: std::u16::MAX,
         uint32: std::u32::MAX,
         uint64: std::u64::MAX,
-        int:   std::int::MIN,
+        isize:  std::isize::MIN,
         int8:  std::i8 ::MIN,
         int16: std::i16::MIN,
         int32: std::i32::MIN,
@@ -72,12 +72,12 @@ fn test_basic_types() {
 
     let template_str = "str: {str}
 string: {string}
-uint: {uint}
+usize: {usize}
 uint8: {uint8}
 uint16: {uint16}
 uint32: {uint32}
 uint64: {uint64}
-int: {int}
+isize: {isize}
 int8: {int8}
 int16: {int16}
 int32: {int32}
@@ -90,22 +90,22 @@ int64: {int64}";
         format!(
 "str: str
 string: String
-uint: {}
+usize: {}
 uint8: {}
 uint16: {}
 uint32: {}
 uint64: {}
-int: {}
+isize: {}
 int8: {}
 int16: {}
 int32: {}
 int64: {}",
-            std::uint::MAX,
+            std::usize::MAX,
             std::u8 ::MAX,
             std::u16::MAX,
             std::u32::MAX,
             std::u64::MAX,
-            std::int::MIN,
+            std::isize::MIN,
             std::i8 ::MIN,
             std::i16::MIN,
             std::i32::MIN,

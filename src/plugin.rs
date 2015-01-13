@@ -36,8 +36,8 @@ fn path_to_attr_type(path: &AstPath) -> Option<AttrType> {
 
     match path_str.connect("::").as_slice() {
         "std::string::String" | "String" | "str" => Some(AttrType::String),
-        "int" | "i8" | "i16" | "i32" | "i64" => Some(AttrType::Int),
-        "uint" | "u8" | "u16" | "u32" | "u64" => Some(AttrType::Uint),
+        "isize" | "i8" | "i16" | "i32" | "i64" => Some(AttrType::Int),
+        "usize" | "u8" | "u16" | "u32" | "u64" => Some(AttrType::Uint),
         "std::vec::Vec" | "Vec"
             | "std::collections::DList" | "DList" => {
             let param_attr = match path.segments.iter().last() {

@@ -59,6 +59,7 @@ pub trait Model {
     fn __get_uint(&self, attr: &str) -> Option<u64>;
 }
 
+#[derive(Copy,PartialEq)]
 pub struct EmptyModel;
 
 impl Model for EmptyModel {

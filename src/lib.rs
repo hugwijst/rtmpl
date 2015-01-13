@@ -1,6 +1,8 @@
 #![feature(box_syntax)]
 #![feature(plugin_registrar)]
 
+#![allow(unstable)]
+
 extern crate syntax;
 extern crate rustc;
 

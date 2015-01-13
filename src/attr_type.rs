@@ -48,3 +48,47 @@ impl AttrType {
         }
     }
 }
+
+trait AsAttrType {
+    fn as_attr_type(_: Option<&Self>) -> AttrType;
+}
+
+macro_rules! impl_attr_type ( ( $for_ty:ty, $attr_ty:ident ) => {
+    impl AsAttrType for $for_ty {
+        fn as_attr_type(_: Option<&$for_ty>) -> AttrType {
+            AttrType::$attr_ty
+        }
+    }
+} );
+
+impl_attr_type!(String, String);
+impl_attr_type!(str, String);
+
+impl_attr_type!(isize, Int);
+impl_attr_type!(i8, Int);
+impl_attr_type!(i16, Int);
+impl_attr_type!(i32, Int);
+impl_attr_type!(i64, Int);
+
+impl_attr_type!(usize, Uint);
+impl_attr_type!(u8, Uint);
+impl_attr_type!(u16, Uint);
+impl_attr_type!(u32, Uint);
+impl_attr_type!(u64, Uint);
+
+macro_rules! impl_attr_type_seq ( ( $for_ty:ty ) => {
+    impl<T: AsAttrType> AsAttrType for $for_ty {
+        fn as_attr_type(_: Option<&$for_ty>) -> AttrType {
+            AttrType::Sequence( Box::new(AsAttrType::as_attr_type(None::<&T>)) )
+        }
+    }
+} );
+
+impl_attr_type_seq!(Vec<T>);
+impl_attr_type_seq!(::std::collections::DList<T>);
+
+impl<'a, T: AsAttrType> AsAttrType for &'a T {
+    fn as_attr_type(_: Option<&&T>) -> AttrType {
+        AsAttrType::as_attr_type(None::<&T>)
+    }
+}

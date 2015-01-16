@@ -81,11 +81,6 @@ fn get_field_info(field: &StructField) -> (Option<Ident>, Option<AttrType>) {
 fn model_template(ecx: &mut ExtCtxt, span: Span, meta_item: &MetaItem, item: &Item, mut push: Box<FnMut(P<Item>)>) {
     match meta_item.node {
         MetaWord(_) => {
-            let pat_attr_type = Path::new(vec!("rtmpl", "attr_type", "AttrType"));
-            let lit_attr_type = Literal(pat_attr_type);
-            let pat_option_attr_type = Path::new_(vec!("std", "option", "Option"), None, vec!(box lit_attr_type), true);
-            let lit_option_attr_type = Literal(pat_option_attr_type);
-
             // Perform checks on struct format
             // TODO: Add support from more struct types
             // TODO: Check if there are more unsupported cases not handled here
@@ -257,18 +252,6 @@ fn model_template(ecx: &mut ExtCtxt, span: Span, meta_item: &MetaItem, item: &It
                 } }
                 );
 
-            let md_get_type =  md!(
-                "__get_type",
-                Vec::new(),
-                None,
-                vec!(
-                    borrowed( box Literal( Path::new(vec!("str")) )),
-                    Literal( Path::new_(vec!("std", "option", "Option"), None, vec!(box Self), true) ),
-                ),
-                lit_option_attr_type,
-                get_type
-            );
-
             macro_rules! md_get (
                 ($name:expr, $bounds:expr, $expl_self:expr, $ret:expr, $f:ident) => {
                     md!(
@@ -282,8 +265,11 @@ fn model_template(ecx: &mut ExtCtxt, span: Span, meta_item: &MetaItem, item: &It
                 }
                 );
 
-            let attr_type = box Literal( Path::new(vec!["rtmpl", "attr", "Attr"]) );
-            let boxed_attr_type = Literal( Path::new_(vec!["std", "boxed", "Box"], None, vec![attr_type], true) );
+            let lit_attr_type = Literal( Path::new(vec!("rtmpl", "attr_type", "AttrType")) );
+            let lit_option_attr_type = Literal( Path::new_(vec!("std", "option", "Option"), None, vec!(box lit_attr_type), true) );
+
+            let lit_attr = box Literal( Path::new(vec!["rtmpl", "attr", "Attr"]) );
+            let lit_box_attr = Literal( Path::new_(vec!["std", "boxed", "Box"], None, vec![lit_attr], true) );
 
             fn option(ty : Ty) -> Ty {
                 Literal( Path::new_(vec!["std", "option", "Option"], None, vec![box ty], true) )
@@ -296,11 +282,11 @@ fn model_template(ecx: &mut ExtCtxt, span: Span, meta_item: &MetaItem, item: &It
                 additional_bounds: Vec::new(),
                 generics: LifetimeBounds::empty(),
                 methods: vec!(
-                    md_get_type,
+                    md_get!("__get_type", Vec::new(), None, lit_option_attr_type, get_type),
                     md_get!("__get_string", Vec::new(), Some(Some(Borrowed(Some("'a"), MutImmutable))), option(Ptr( box Literal(Path::new(vec!("str"))), Borrowed(Some("'a"), MutImmutable) )), get_str),
                     md_get!("__get_int", Vec::new(), borrowed_explicit_self(), option( Literal(Path::new(vec!("i64"))) ), get_int),
                     md_get!("__get_uint", Vec::new(), borrowed_explicit_self(), option( Literal(Path::new(vec!("u64"))) ), get_uint),
-                    md_get!("__get_attr", Vec::new(), borrowed_explicit_self(), option(boxed_attr_type), get_attr),
+                    md_get!("__get_attr", Vec::new(), borrowed_explicit_self(), option(lit_box_attr), get_attr),
                     )
             };
             trait_def.expand(ecx, meta_item, item, |i| push(i))

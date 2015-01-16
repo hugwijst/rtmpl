@@ -53,7 +53,7 @@ impl <M: Model> StringTemplate<M> {
                             panic!("No closing delimiter for \"{\"!");
                         }
                         [expr, text] => {
-                            let ty = Model::__get_type(expr, None::<M>);
+                            let ty = <M as Model>::__get_type(expr);
                             assert!(ty.is_some());
 
                             ast.push(Item::Expr { expr: Expr::Field{ name: expr.to_string(), ty: ty.unwrap() } } );

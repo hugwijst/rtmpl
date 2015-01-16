@@ -2,7 +2,7 @@ use attr::Attr;
 use attr_type::AttrType;
 
 pub trait Model {
-    fn __get_type(attr: &str, _ignored: Option<Self>) -> Option<AttrType>;
+    fn __get_type(attr: &str) -> Option<AttrType>;
     fn __get_attr(&self, attr: &str) -> Option<Box<Attr>>;
     fn __get_string<'a>(&'a self, attr: &str) -> Option<&'a str>;
     fn __get_int(&self, attr: &str) -> Option<i64>;
@@ -13,7 +13,7 @@ pub trait Model {
 pub struct EmptyModel;
 
 impl Model for EmptyModel {
-    fn __get_type(_attr: &str, _ignored: Option<EmptyModel>) -> Option<AttrType> {
+    fn __get_type(_attr: &str) -> Option<AttrType> {
         // This model does not have any attributes
         return None;
     }

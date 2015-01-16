@@ -40,18 +40,18 @@ fn simple_sequence_model() {
         ints64: vec![-64, 0, std::i64::MIN, std::i64::MAX],
     };
 
-    assert!(Model::__get_type("strs", None::<BasicTypeSequenceModel>).unwrap() == AttrType::Sequence(box AttrType::String));
-    assert!(Model::__get_type("strings", None::<BasicTypeSequenceModel>).unwrap() == AttrType::Sequence(box AttrType::String));
-    assert!(Model::__get_type("usizes",   None::<BasicTypeSequenceModel>).unwrap() == AttrType::Sequence(box AttrType::Uint));
-    assert!(Model::__get_type("uints8",  None::<BasicTypeSequenceModel>).unwrap() == AttrType::Sequence(box AttrType::Uint));
-    assert!(Model::__get_type("uints16", None::<BasicTypeSequenceModel>).unwrap() == AttrType::Sequence(box AttrType::Uint));
-    assert!(Model::__get_type("uints32", None::<BasicTypeSequenceModel>).unwrap() == AttrType::Sequence(box AttrType::Uint));
-    assert!(Model::__get_type("uints64", None::<BasicTypeSequenceModel>).unwrap() == AttrType::Sequence(box AttrType::Uint));
-    assert!(Model::__get_type("isizes",  None::<BasicTypeSequenceModel>).unwrap() == AttrType::Sequence(box AttrType::Int));
-    assert!(Model::__get_type("ints8",  None::<BasicTypeSequenceModel>).unwrap() == AttrType::Sequence(box AttrType::Int));
-    assert!(Model::__get_type("ints16", None::<BasicTypeSequenceModel>).unwrap() == AttrType::Sequence(box AttrType::Int));
-    assert!(Model::__get_type("ints32", None::<BasicTypeSequenceModel>).unwrap() == AttrType::Sequence(box AttrType::Int));
-    assert!(Model::__get_type("ints64", None::<BasicTypeSequenceModel>).unwrap() == AttrType::Sequence(box AttrType::Int));
+    assert!(<BasicTypeSequenceModel as Model>::__get_type("strs").unwrap() == AttrType::Sequence(box AttrType::String));
+    assert!(<BasicTypeSequenceModel as Model>::__get_type("strings").unwrap() == AttrType::Sequence(box AttrType::String));
+    assert!(<BasicTypeSequenceModel as Model>::__get_type("usizes").unwrap() == AttrType::Sequence(box AttrType::Uint));
+    assert!(<BasicTypeSequenceModel as Model>::__get_type("uints8").unwrap() == AttrType::Sequence(box AttrType::Uint));
+    assert!(<BasicTypeSequenceModel as Model>::__get_type("uints16").unwrap() == AttrType::Sequence(box AttrType::Uint));
+    assert!(<BasicTypeSequenceModel as Model>::__get_type("uints32").unwrap() == AttrType::Sequence(box AttrType::Uint));
+    assert!(<BasicTypeSequenceModel as Model>::__get_type("uints64").unwrap() == AttrType::Sequence(box AttrType::Uint));
+    assert!(<BasicTypeSequenceModel as Model>::__get_type("isizes").unwrap() == AttrType::Sequence(box AttrType::Int));
+    assert!(<BasicTypeSequenceModel as Model>::__get_type("ints8").unwrap() == AttrType::Sequence(box AttrType::Int));
+    assert!(<BasicTypeSequenceModel as Model>::__get_type("ints16").unwrap() == AttrType::Sequence(box AttrType::Int));
+    assert!(<BasicTypeSequenceModel as Model>::__get_type("ints32").unwrap() == AttrType::Sequence(box AttrType::Int));
+    assert!(<BasicTypeSequenceModel as Model>::__get_type("ints64").unwrap() == AttrType::Sequence(box AttrType::Int));
 
     let attr = model.__get_attr("strs").unwrap();
     let attr_vals : Vec<&str> = attr.iter().map(|ref attr| attr.get_string()).collect();
@@ -120,7 +120,7 @@ fn sequence_of_sequence_model() {
         usizes: vec_of_vecs.clone(),
     };
 
-    assert!(Model::__get_type("usizes", None::<SequenceOfSequenceModel>).unwrap() == AttrType::Sequence(box AttrType::Sequence(box AttrType::Uint)));
+    assert!(<SequenceOfSequenceModel as Model>::__get_type("usizes").unwrap() == AttrType::Sequence(box AttrType::Sequence(box AttrType::Uint)));
 
     let attr = model.__get_attr("usizes").unwrap();
     let attr_vals : Vec<Vec<_>> = attr
@@ -145,7 +145,7 @@ fn unusual_sequence_model() {
         d_list: vals1.iter().map(|&v| v).collect(),
     };
 
-    assert!(Model::__get_type("d_list", None::<UnusualSequenceModel>).unwrap() == AttrType::Sequence(box AttrType::Uint));
+    assert!(<UnusualSequenceModel as Model>::__get_type("d_list").unwrap() == AttrType::Sequence(box AttrType::Uint));
 
     let attr = model.__get_attr("d_list").unwrap();
     let attr_vals : Vec<_> = attr.iter().map(|ref attr| attr.get_uint()).collect();

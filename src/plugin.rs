@@ -2,17 +2,16 @@ use rustc::plugin::Registry;
 use syntax::ast::Arm;
 use syntax::ast::{AngleBracketedParameters, AngleBracketedParameterData};
 use syntax::ast::{Expr, Ident, Item, ItemStruct, MetaItem, MetaWord};
-use syntax::ast::MutImmutable;
 use syntax::ast::{NamedField, StructField, UnnamedField};
 use syntax::ast::{Ty_, MutTy, PathSegment};
 use syntax::ast::Path as AstPath;
 use syntax::ast::Ty as AstTy;
-use syntax::ast::UnOp;
+use syntax::ast::Visibility;
 use syntax::codemap::{Span};
 use syntax::ext::base::{Decorator, ExtCtxt};
 use syntax::ext::build::AstBuilder;
 use syntax::ext::deriving::generic::{combine_substructure, MethodDef, Substructure, SubstructureFields, TraitDef};
-use syntax::ext::deriving::generic::ty::{borrowed, borrowed_explicit_self, Borrowed, LifetimeBounds, Literal, Path, Ptr, Ty};
+use syntax::ext::deriving::generic::ty::{borrowed, borrowed_explicit_self, LifetimeBounds, Literal, Path, Ty};
 use syntax::parse::token;
 use syntax::ptr::P;
 
@@ -135,45 +134,16 @@ fn model_template(ecx: &mut ExtCtxt, span: Span, meta_item: &MetaItem, item: &It
             type MatchType = fn(&AttrType) -> bool;
             type GetArmExpr = fn(Span, &ExtCtxt, Ident, &AttrType) -> P<Expr>;
 
-            fn match_for_type(is_ty: MatchType,
-                              str_fields: &Vec<StructField>,
-                              cx: &mut ExtCtxt,
-                              span: Span,
-                              substr: &Substructure,
-                              arm_expr_fn: GetArmExpr) -> P<Expr> {
-                // Get the name and type of each named field
-                let mut fields : Vec<Arm> = str_fields.iter().filter_map(|field| {
-                    let info = get_field_info(field);
-
-                    match info {
-                        // Known type, named field
-                        (Some(ident), Some(ref field_ty)) if is_ty(field_ty) => {
-                            let ident_istring = token::get_ident(ident);
-                            // The pattern of the match arm, should be the name of the
-                            // field
-                            let pattern = vec!(cx.pat_lit(span, cx.expr_str(span, ident_istring)));
-
-                            // The expression of the match arm
-                            let expression = arm_expr_fn(span, cx, ident, field_ty);
-
-                            Some( cx.arm(span, pattern, expression) )
-                        },
-                        // We don't care for other types or unnamed fields
-                        _ => None
-                    }
-                }).collect();
-
-                // Add the final arm: "_ => None"
-                fields.push(cx.arm(span, vec!(cx.pat_wild(span)), cx.expr_none(span)));
-
-                // Return the constructed match statement
-                cx.expr_match(span,
-                    substr.nonself_args[0].clone(),
-                    fields,
-                )
-            }
-
             let get_attr = |&: cx: &mut ExtCtxt, span: Span, substr: &Substructure| -> P<Expr> {
+                // Use the ToAttr trait
+                let use_to_attr = cx.stmt_item(
+                    span,
+                    cx.item_use_simple(
+                        span,
+                        Visibility::Inherited,
+                        cx.path_global(span, vec![cx.ident_of("rtmpl"), cx.ident_of("attr"), cx.ident_of("ToAttr")]),
+                    )
+                );
                 // Get the name and type of each named field
                 let fields = match *substr.fields {
                     SubstructureFields::Struct(ref field_info) => field_info,
@@ -194,10 +164,12 @@ fn model_template(ecx: &mut ExtCtxt, span: Span, meta_item: &MetaItem, item: &It
                 arms.push(cx.arm(span, vec!(cx.pat_wild(span)), cx.expr_none(span)));
 
                 // Return the constructed match statement
-                cx.expr_match(span,
+                let ret_expr = cx.expr_match(span,
                     substr.nonself_args[0].clone(),
                     arms,
-                )
+                );
+
+                cx.expr_block( cx.block(span, vec![use_to_attr], Some(ret_expr)) )
             };
 
             macro_rules! md (

@@ -1,5 +1,4 @@
 use attr::Attr;
-use attr_type::AttrType;
 use model::Model;
 
 pub trait Template<M: Model> {

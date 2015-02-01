@@ -1,11 +1,13 @@
 #![feature(plugin)]
 
+#![feature(collections)]
+
 #[plugin]
 extern crate rtmpl;
 
 use rtmpl::Model;
 use rtmpl::attr_type::AttrType;
-use rtmpl::attr::{Attr, ToAttr};
+use rtmpl::attr::Attr;
 
 #[model]
 struct TestModel {
@@ -65,7 +67,7 @@ fn compound_str() {
     const U32_MAX: u64 = ::std::u32::MAX as u64;
 
     const IS_MIN: i64 = ::std::isize::MIN as i64;
-    const I8_MIX: i64 = ::std::i8::MIN as i64;
+    const I8_MIN: i64 = ::std::i8::MIN as i64;
     const I16_MIN: i64 = ::std::i16::MIN as i64;
     const I32_MIN: i64 = ::std::i32::MIN as i64;
 

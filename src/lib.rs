@@ -1,7 +1,9 @@
 #![feature(box_syntax)]
 #![feature(plugin_registrar)]
 
-#![allow(unstable)]
+#![feature(collections)]
+#![feature(core)]
+#![feature(rustc_private)]
 
 extern crate syntax;
 extern crate rustc;

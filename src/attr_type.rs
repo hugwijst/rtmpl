@@ -4,7 +4,7 @@ use syntax::ext::base::ExtCtxt;
 use syntax::ext::build::AstBuilder;
 use syntax::ptr::P;
 
-#[derive(PartialEq,Show)]
+#[derive(Debug,Clone,Eq,PartialEq)]
 pub enum AttrType {
     String,
     Int,
@@ -12,6 +12,7 @@ pub enum AttrType {
     Sequence(Box<AttrType>),
     //Map,
     //Set,
+    //Model
 }
 
 impl AttrType {
@@ -49,12 +50,12 @@ impl AttrType {
     }
 }
 
-trait AsAttrType {
+pub trait AsAttrType {
     fn as_attr_type() -> AttrType;
 }
 
 macro_rules! impl_attr_type ( ( $for_ty:ty, $attr_ty:ident ) => {
-    impl AsAttrType for $for_ty {
+    impl<'a> AsAttrType for $for_ty {
         fn as_attr_type() -> AttrType {
             AttrType::$attr_ty
         }
@@ -62,7 +63,7 @@ macro_rules! impl_attr_type ( ( $for_ty:ty, $attr_ty:ident ) => {
 } );
 
 impl_attr_type!(String, String);
-impl_attr_type!(str, String);
+impl_attr_type!(&'a str, String);
 
 impl_attr_type!(isize, Int);
 impl_attr_type!(i8, Int);
@@ -90,5 +91,45 @@ impl_attr_type_seq!(::std::collections::DList<T>);
 impl<'a, T: AsAttrType> AsAttrType for &'a T {
     fn as_attr_type() -> AttrType {
         <T as AsAttrType>::as_attr_type()
+    }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_as_attr_type_string() {
+        assert_eq!(<String as AsAttrType>::as_attr_type(), AttrType::String);
+        assert_eq!(<&str as AsAttrType>::as_attr_type(), AttrType::String);
+    }
+
+    #[test]
+    fn test_as_attr_type_int() {
+        assert_eq!(<isize as AsAttrType>::as_attr_type(), AttrType::Int);
+        assert_eq!(<i8 as AsAttrType>::as_attr_type(), AttrType::Int);
+        assert_eq!(<i16 as AsAttrType>::as_attr_type(), AttrType::Int);
+        assert_eq!(<i32 as AsAttrType>::as_attr_type(), AttrType::Int);
+        assert_eq!(<i64 as AsAttrType>::as_attr_type(), AttrType::Int);
+    }
+
+    #[test]
+    fn test_as_attr_type_uint() {
+        assert_eq!(<usize as AsAttrType>::as_attr_type(), AttrType::Uint);
+        assert_eq!(<u8 as AsAttrType>::as_attr_type(), AttrType::Uint);
+        assert_eq!(<u16 as AsAttrType>::as_attr_type(), AttrType::Uint);
+        assert_eq!(<u32 as AsAttrType>::as_attr_type(), AttrType::Uint);
+        assert_eq!(<u64 as AsAttrType>::as_attr_type(), AttrType::Uint);
+    }
+
+    #[test]
+    fn test_as_attr_type_sequence() {
+        use std::collections::DList;
+
+        assert_eq!(<Vec<String> as AsAttrType>::as_attr_type(), AttrType::Sequence(box AttrType::String));
+        assert_eq!(<Vec<Vec<usize>> as AsAttrType>::as_attr_type(), AttrType::Sequence(box AttrType::Sequence(box AttrType::Uint)));
+
+        assert_eq!(<DList<&str> as AsAttrType>::as_attr_type(), AttrType::Sequence(box AttrType::String));
+        assert_eq!(<DList<Vec<u32>> as AsAttrType>::as_attr_type(), AttrType::Sequence(box AttrType::Sequence(box AttrType::Uint)));
     }
 }

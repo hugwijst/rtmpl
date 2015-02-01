@@ -11,7 +11,7 @@ use syntax::ast::UnOp;
 use syntax::codemap::{Span};
 use syntax::ext::base::{Decorator, ExtCtxt};
 use syntax::ext::build::AstBuilder;
-use syntax::ext::deriving::generic::{combine_substructure, MethodDef, Substructure, TraitDef};
+use syntax::ext::deriving::generic::{combine_substructure, MethodDef, Substructure, SubstructureFields, TraitDef};
 use syntax::ext::deriving::generic::ty::{borrowed, borrowed_explicit_self, Borrowed, LifetimeBounds, Literal, Path, Ptr, Ty};
 use syntax::parse::token;
 use syntax::ptr::P;
@@ -90,7 +90,6 @@ fn model_template(ecx: &mut ExtCtxt, span: Span, meta_item: &MetaItem, item: &It
             };
 
             let get_type = |&: cx: &mut ExtCtxt, span: Span, substr: &Substructure| -> P<Expr> {
-                // Get the name and type of each named field
                 let mut fields : Vec<Arm> = struct_def.fields.iter().filter_map(|field| {
                     let info = get_field_info(field);
 
@@ -174,64 +173,31 @@ fn model_template(ecx: &mut ExtCtxt, span: Span, meta_item: &MetaItem, item: &It
                 )
             }
 
-            let get_str = |&: cx: &mut ExtCtxt, span: Span, substr: &Substructure| -> P<Expr> {
-                fn is_ty(ty: &AttrType) -> bool {
-                    *ty == AttrType::String
-                }
-                fn arm_expr_fn(span: Span, cx: &ExtCtxt, ident: Ident, _ty: &AttrType) -> P<Expr> {
-                    let res = cx.expr_method_call(span, cx.expr_field_access(span, cx.expr_self(span), ident), cx.ident_of("as_slice"), Vec::new());
-                    cx.expr_some(span, res)
-                };
-                match_for_type(is_ty, &struct_def.fields, cx, span, substr, arm_expr_fn)
-            };
-
-            let get_int = |&: cx: &mut ExtCtxt, span: Span, substr: &Substructure| -> P<Expr> {
-                fn is_ty(ty: &AttrType) -> bool {
-                    *ty == AttrType::Int
-                }
-                fn arm_expr_fn(span: Span, cx: &ExtCtxt, ident: Ident, _ty: &AttrType) -> P<Expr> {
-                    let res = cx.expr_cast(span, cx.expr_field_access(span, cx.expr_self(span), ident), cx.ty_ident(span, cx.ident_of("i64")));
-                    cx.expr_some(span, res)
-                };
-                match_for_type(is_ty, &struct_def.fields, cx, span, substr, arm_expr_fn)
-            };
-
-            let get_uint = |&: cx: &mut ExtCtxt, span: Span, substr: &Substructure| -> P<Expr> {
-                fn is_ty(ty: &AttrType) -> bool {
-                    *ty == AttrType::Uint
-                }
-                fn arm_expr_fn(span: Span, cx: &ExtCtxt, ident: Ident, _ty: &AttrType) -> P<Expr> {
-                    let res = cx.expr_cast(span, cx.expr_field_access(span, cx.expr_self(span), ident), cx.ty_ident(span, cx.ident_of("u64")));
-                    cx.expr_some(span, res)
-                };
-                match_for_type(is_ty, &struct_def.fields, cx, span, substr, arm_expr_fn)
-            };
-
             let get_attr = |&: cx: &mut ExtCtxt, span: Span, substr: &Substructure| -> P<Expr> {
-                fn is_ty(ty: &AttrType) -> bool {
-                    match ty {
-                        &AttrType::Sequence(_) => true,
-                        _ => false,
-                    }
-                }
-                fn arm_expr_fn(span: Span, cx: &ExtCtxt, ident: Ident, _ty: &AttrType) -> P<Expr> {
-                    let fields = vec![
-                        cx.field_imm(span, cx.ident_of("data"), cx.expr_unary(span, UnOp::UnUniq, cx.expr_method_call(span, cx.expr_field_access(span, cx.expr_self(span), ident), cx.ident_of("iter"), Vec::new()))),
-                    ];
-                    let attr = cx.expr_struct(span, cx.path(span, vec!["rtmpl", "attr", "SeqAttr"].iter().map(|&s| cx.ident_of(s)).collect()), fields);
-
-                    let attr_ty = cx.ty_path( cx.path(span, vec!["rtmpl", "attr", "Attr"].iter().map(|&s| cx.ident_of(s)).collect()) );
-                    let box_ty = cx.ty_path( cx.path_all(
-                        span,
-                        true,
-                        vec!["std", "boxed", "Box"].iter().map(|&s| cx.ident_of(s)).collect(),
-                        Vec::new(),
-                        vec![attr_ty],
-                        Vec::new(),
-                    ) );
-                    cx.expr_some(span, cx.expr_cast(span, cx.expr_unary(span, UnOp::UnUniq, attr), box_ty))
+                // Get the name and type of each named field
+                let fields = match *substr.fields {
+                    SubstructureFields::Struct(ref field_info) => field_info,
+                    _ => panic!("We only support structures for now."),
                 };
-                match_for_type(is_ty, &struct_def.fields, cx, span, substr, arm_expr_fn)
+
+                let mut arms : Vec<Arm> = fields.iter().map(|field| {
+                    let ident = token::get_ident( field.name.unwrap() );
+                    let pattern = vec!(cx.pat_lit(span, cx.expr_str(span, ident)));
+
+                    let call = cx.expr_method_call(span, field.self_.clone(), cx.ident_of("to_attr"), Vec::new());
+                    let expression = cx.expr_some(span, call);
+
+                    cx.arm(span, pattern, expression)
+                }).collect();
+
+                // Add the final arm: "_ => None"
+                arms.push(cx.arm(span, vec!(cx.pat_wild(span)), cx.expr_none(span)));
+
+                // Return the constructed match statement
+                cx.expr_match(span,
+                    substr.nonself_args[0].clone(),
+                    arms,
+                )
             };
 
             macro_rules! md (
@@ -283,11 +249,9 @@ fn model_template(ecx: &mut ExtCtxt, span: Span, meta_item: &MetaItem, item: &It
                 generics: LifetimeBounds::empty(),
                 methods: vec!(
                     md_get!("__get_type", Vec::new(), None, lit_option_attr_type, get_type),
-                    md_get!("__get_string", Vec::new(), Some(Some(Borrowed(Some("'a"), MutImmutable))), option(Ptr( box Literal(Path::new(vec!("str"))), Borrowed(Some("'a"), MutImmutable) )), get_str),
-                    md_get!("__get_int", Vec::new(), borrowed_explicit_self(), option( Literal(Path::new(vec!("i64"))) ), get_int),
-                    md_get!("__get_uint", Vec::new(), borrowed_explicit_self(), option( Literal(Path::new(vec!("u64"))) ), get_uint),
                     md_get!("__get_attr", Vec::new(), borrowed_explicit_self(), option(lit_box_attr), get_attr),
-                    )
+                ),
+                associated_types: Vec::new(),
             };
             trait_def.expand(ecx, meta_item, item, |i| push(i))
         }

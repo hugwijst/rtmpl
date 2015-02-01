@@ -5,6 +5,7 @@ extern crate rtmpl;
 
 use rtmpl::Model;
 use rtmpl::attr_type::AttrType;
+use rtmpl::attr::{Attr, ToAttr};
 
 #[model]
 struct TestModel {
@@ -39,8 +40,6 @@ fn compound_str() {
         int64: std::i64::MIN,
     };
 
-    // XXX: The none::<> stuff is a hack until Uniform Function Call Syntax (UFCS) is implemented,
-    // see http://stackoverflow.com/questions/23674538/name-resolving-error-when-implementing-static-method-from-a-trait
     assert!(<TestModel as Model>::__get_type("str").unwrap() == AttrType::String);
     assert!(<TestModel as Model>::__get_type("string").unwrap() == AttrType::String);
     assert!(<TestModel as Model>::__get_type("usize" ).unwrap() == AttrType::Uint);
@@ -54,16 +53,32 @@ fn compound_str() {
     assert!(<TestModel as Model>::__get_type("int32").unwrap() == AttrType::Int);
     assert!(<TestModel as Model>::__get_type("int64").unwrap() == AttrType::Int);
     assert!(<TestModel as Model>::__get_type("n/a").is_none());
-    assert!(model.__get_string("str").unwrap() == "str");
-    assert!(model.__get_string("string").unwrap() == "String");
-    assert!(model.__get_uint("usize"  ).unwrap() as usize == ::std::usize::MAX);
-    assert!(model.__get_uint("uint8" ).unwrap() as u8   == ::std::u8  ::MAX);
-    assert!(model.__get_uint("uint16").unwrap() as u16  == ::std::u16 ::MAX);
-    assert!(model.__get_uint("uint32").unwrap() as u32  == ::std::u32 ::MAX);
-    assert!(model.__get_uint("uint64").unwrap() as u64  == ::std::u64 ::MAX);
-    assert!(model.__get_int("isize").unwrap() as isize == ::std::isize::MIN);
-    assert!(model.__get_int("int8" ).unwrap() as i8  == ::std::i8 ::MIN);
-    assert!(model.__get_int("int16").unwrap() as i16 == ::std::i16::MIN);
-    assert!(model.__get_int("int32").unwrap() as i32 == ::std::i32::MIN);
-    assert!(model.__get_int("int64").unwrap() as i64 == ::std::i64::MIN);
+
+    macro_rules! assert_attr ( ($to_attr: expr, $attr: pat) => ({
+        let panic_msg = concat!("Attributes are not equal: \"", stringify!($to_attr), ".to_attr()\", \"", stringify!($attr), "\".");
+        if let $attr = *$to_attr {} else { panic!( panic_msg ) };
+    }) );
+
+    const US_MAX: u64 = ::std::usize::MAX as u64;
+    const U8_MAX: u64 = ::std::u8::MAX as u64;
+    const U16_MAX: u64 = ::std::u16::MAX as u64;
+    const U32_MAX: u64 = ::std::u32::MAX as u64;
+
+    const IS_MIN: i64 = ::std::isize::MIN as i64;
+    const I8_MIX: i64 = ::std::i8::MIN as i64;
+    const I16_MIN: i64 = ::std::i16::MIN as i64;
+    const I32_MIN: i64 = ::std::i32::MIN as i64;
+
+    assert_attr!(model.__get_attr("str").unwrap(), Attr::String("str"));
+    assert_attr!(model.__get_attr("string").unwrap(), Attr::String("String"));
+    assert_attr!(model.__get_attr("usize" ).unwrap(), Attr::Uint(US_MAX));
+    assert_attr!(model.__get_attr("uint8" ).unwrap(), Attr::Uint(U8_MAX));
+    assert_attr!(model.__get_attr("uint16").unwrap(), Attr::Uint(U16_MAX));
+    assert_attr!(model.__get_attr("uint32").unwrap(), Attr::Uint(U32_MAX));
+    assert_attr!(model.__get_attr("uint64").unwrap(), Attr::Uint(::std::u64::MAX));
+    assert_attr!(model.__get_attr("isize").unwrap(), Attr::Int(IS_MIN));
+    assert_attr!(model.__get_attr("int8" ).unwrap(), Attr::Int(I8_MIN));
+    assert_attr!(model.__get_attr("int16").unwrap(), Attr::Int(I16_MIN));
+    assert_attr!(model.__get_attr("int32").unwrap(), Attr::Int(I32_MIN));
+    assert_attr!(model.__get_attr("int64").unwrap(), Attr::Int(::std::i64::MIN));
 }

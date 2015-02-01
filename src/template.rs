@@ -1,3 +1,4 @@
+use attr::Attr;
 use attr_type::AttrType;
 use model::Model;
 
@@ -6,7 +7,7 @@ pub trait Template<M: Model> {
 }
 
 enum Expr {
-    Field { name: String, ty: AttrType },
+    Field { name: String },
 }
 
 enum Item {
@@ -54,9 +55,11 @@ impl <M: Model> StringTemplate<M> {
                         }
                         [expr, text] => {
                             let ty = <M as Model>::__get_type(expr);
+
+                            // TODO check if type is valid in this context
                             assert!(ty.is_some());
 
-                            ast.push(Item::Expr { expr: Expr::Field{ name: expr.to_string(), ty: ty.unwrap() } } );
+                            ast.push(Item::Expr { expr: Expr::Field{ name: expr.to_string() } } );
                             text
                         }
                         _ => unreachable!("Because split called with n == 1.")
@@ -76,11 +79,13 @@ impl <M: Model> StringTemplate<M> {
         for ref item in self.ast.iter() {
             match *item {
                 &Item::Text { ref text } => res.push_str(text.as_slice()),
-                &Item::Expr { expr: Expr::Field { ref name, ref ty } } => match ty {
-                    &AttrType::String => res.push_str(model.__get_string(name.as_slice()).unwrap()),
-                    &AttrType::Int => res.push_str(model.__get_int(name.as_slice()).unwrap().to_string().as_slice()),
-                    &AttrType::Uint => res.push_str(model.__get_uint(name.as_slice()).unwrap().to_string().as_slice()),
-                    &AttrType::Sequence(_) => (),
+                &Item::Expr { expr: Expr::Field { ref name } } => {
+                    match *model.__get_attr(name.as_slice()).unwrap() {
+                        Attr::String(s) => res.push_str(s),
+                        Attr::Int(i) => res.push_str(i.to_string().as_slice()),
+                        Attr::Uint(u) => res.push_str(u.to_string().as_slice()),
+                        Attr::Sequence(_) => (),
+                    }
                 }
             }
         }

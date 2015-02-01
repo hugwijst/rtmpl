@@ -117,6 +117,18 @@ mod test {
         };
     } );
 
+    macro_rules! test_attr_seq ( ($seq: expr, [ $($attr: pat),* ]) => {
+        match $seq {
+            Attr::Sequence(mut iter) => {
+                $(
+                    test_attr!(iter.next().unwrap(), $attr);
+                 )*
+                assert!(iter.next().is_none());
+            }
+            _ => panic!("Expected sequence"),
+        }
+    } );
+
     #[test]
     fn to_attr_str() {
         test_attr!("foo".to_attr(), Attr::String("foo"));
@@ -149,46 +161,13 @@ mod test {
 
     #[test]
     fn to_attr_vec() {
-        match *vec!(2is, 4is).to_attr() {
-            Attr::Sequence(iter) => {
-                let vec: Vec<_> = iter.collect();
-
-                test_attr!(vec[0], Attr::Int(2i64));
-                test_attr!(vec[1], Attr::Int(4i64));
-            }
-            _ => panic!("Expected sequence"),
-        }
-
-        match *vec!("foo", "bar").to_attr() {
-            Attr::Sequence(iter) => {
-                let vec: Vec<_> = iter.collect();
-
-                test_attr!(vec[0], Attr::String("foo"));
-                test_attr!(vec[1], Attr::String("bar"));
-            }
-            _ => panic!("Expected sequence"),
-        }
+        test_attr_seq!(*vec!(2is, 4is).to_attr(), [Attr::Int(2), Attr::Int(4)]);
+        test_attr_seq!(*vec!("foo", "bar").to_attr(), [Attr::String("foo"), Attr::String("bar")]);
 
         match *vec!(vec!("foo", "bar"), vec!("oof")).to_attr() {
             Attr::Sequence(mut iter) => {
-                match *iter.next().unwrap() {
-                    Attr::Sequence(iter_) => {
-                        let vec_: Vec<_> = iter_.collect();
-                        assert_eq!(vec_.len(), 2);
-                        test_attr!(vec_[0], Attr::String("foo"));
-                        test_attr!(vec_[1], Attr::String("bar"));
-                    }
-                    _ => panic!("Expected Sequence"),
-                };
-
-                match *iter.next().unwrap() {
-                    Attr::Sequence(iter_) => {
-                        let vec_: Vec<_> = iter_.collect();
-                        assert_eq!(vec_.len(), 1);
-                        test_attr!(vec_[0], Attr::String("oof"));
-                    }
-                    _ => panic!("Expected Sequence"),
-                };
+                test_attr_seq!(*iter.next().unwrap(), [Attr::String("foo"), Attr::String("bar")]);
+                test_attr_seq!(*iter.next().unwrap(), [Attr::String("oof")]);
 
                 assert!(iter.next().is_none());
             }

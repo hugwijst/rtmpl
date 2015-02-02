@@ -1,7 +1,5 @@
 #![feature(plugin)]
 
-#![feature(collections)]
-
 #[plugin]
 extern crate rtmpl;
 
@@ -26,7 +24,7 @@ struct TestModel {
 }
 
 #[test]
-fn compound_str() {
+fn simple_model() {
     let model = TestModel {
         str: "str",
         string: "String".to_string(),

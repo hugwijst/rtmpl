@@ -1,8 +1,6 @@
 #![feature(box_syntax)]
 #![feature(plugin)]
 
-#![feature(collections)]
-
 #[plugin]
 extern crate rtmpl;
 

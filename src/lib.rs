@@ -1,7 +1,6 @@
 #![feature(box_syntax)]
 #![feature(plugin_registrar)]
 
-#![feature(collections)]
 #![feature(core)]
 #![feature(rustc_private)]
 

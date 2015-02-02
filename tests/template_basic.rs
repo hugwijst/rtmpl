@@ -1,7 +1,6 @@
 #![feature(plugin)]
 
 #![feature(core)]
-#![feature(collections)]
 
 #[plugin]
 extern crate rtmpl;
